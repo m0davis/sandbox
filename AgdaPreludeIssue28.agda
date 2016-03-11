@@ -18,14 +18,11 @@ module AgdaPreludeIssue28 where
     ≤ₛ→≤ₚ _ | less-than-or-equal {k = k} a+k≡b = diff k (by a+k≡b)
 
   open import Agda.Builtin.Reflection using (Name)
-  open import Agda.Builtin.Nat using (Nat)
   module Adapter (`_≤ₐ_ `≤ₐ→≤₀ `≤₀→≤ₐ : Name) where
     open import Prelude
     open import Tactic.Reflection
     open import Data.Nat using () renaming (_≤_ to _≤ₛ_)
     open import Tactic.Nat hiding (by) public
-    open import Tactic.Reflection.Quote
-    open import Tactic.Reflection.Match
    
     macro
       by : Term → Tactic
@@ -55,13 +52,16 @@ module AgdaPreludeIssue28 where
     open import Agda.Builtin.Reflection
     open import Agda.Builtin.List
 
+    by-example₂ : (a b c : ℕ) → a + c < b + c → a < b
+    by-example₂ a b c lt = by lt
+    
     by-example₄ : (a b c : ℕ) → a + b + c ≤ b → 2 * c ≡ c
     by-example₄ a b c lt = by lt
 
     test-byₛ : {a b : ℕ} → suc a ≤ b → a ≤ suc b
     test-byₛ a₊₁≤b = by a₊₁≤b
 
-    downFrom : Nat → List Nat
+    downFrom : ℕ → List ℕ
     downFrom zero    = []
     downFrom (suc n) = suc n ∷ downFrom n
 {-    
@@ -69,7 +69,7 @@ module AgdaPreludeIssue28 where
     induction-example = induction
 -}    
 
-    _^_ : Nat → Nat → Nat
+    _^_ : ℕ → ℕ → ℕ
     n ^ zero  = 1
     n ^ suc m = n ^ m * n
     
