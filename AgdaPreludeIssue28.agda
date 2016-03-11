@@ -44,34 +44,56 @@ module AgdaPreludeIssue28 where
         0→a _ = id -- TODO
         
   module StandardLibraryTest where
-    open import Data.Nat
     open import Agda.Builtin.Equality
-    open EquivalenceOf≤
-    open Adapter (quote _≤_) (quote ≤ₛ→≤ₚ) (quote ≤ₚ→≤ₛ)
+    open import Data.Nat
+    open import Data.List
 
-    open import Agda.Builtin.Reflection
-    open import Agda.Builtin.List
-
-    by-example₂ : (a b c : ℕ) → a + c < b + c → a < b
-    by-example₂ a b c lt = by lt
-    
-    by-example₄ : (a b c : ℕ) → a + b + c ≤ b → 2 * c ≡ c
-    by-example₄ a b c lt = by lt
-
-    test-byₛ : {a b : ℕ} → suc a ≤ b → a ≤ suc b
-    test-byₛ a₊₁≤b = by a₊₁≤b
-
-    downFrom : ℕ → List ℕ
-    downFrom zero    = []
-    downFrom (suc n) = suc n ∷ downFrom n
-{-    
-    induction-example : ∀ n → sum (downFrom n) Data.Nat.* 2 ≡ n Data.Nat.* (n Data.Nat.+ 1)
-    induction-example = induction
--}    
-
+    infixr 8 _^_
     _^_ : ℕ → ℕ → ℕ
     n ^ zero  = 1
     n ^ suc m = n ^ m * n
     
---    auto-example₁ : (a b : Nat) → (a - b) * (a + b) ≡ ((a ^ 2) - (b ^ 2))
---    auto-example₁ a b = auto
+    open EquivalenceOf≤
+    open Adapter (quote _≤_) (quote ≤ₛ→≤ₚ) (quote ≤ₚ→≤ₛ)
+
+    auto-example₁ : (a b : ℕ) → (a ∸ b) * (a + b) ≡ a ^ 2 ∸ b ^ 2
+    auto-example₁ a b = {!auto!}
+   
+    auto-example₂ : (a b : ℕ) → (a + b) ^ 2 ≥ a ^ 2 + b ^ 2
+    auto-example₂ a b = {!auto!}
+
+    by-example₁ : (xs ys : List ℕ) → sum (xs ++ ys) ≡ sum ys + sum xs
+    by-example₁ []       ys = auto
+    by-example₁ (x ∷ xs) ys = by (by-example₁ xs ys)
+   
+    by-example₂ : (a b c : ℕ) → a + c < b + c → a < b
+    by-example₂ a b c lt = by lt
+   
+    by-example₃ : (a b : ℕ) → a ≡ b * 2 → a + b < (b + 1) * 3
+    by-example₃ a b eq = by eq
+   
+    by-example₄ : (a b c : ℕ) → a + b + c ≤ b → 2 * c ≡ c
+    by-example₄ a b c lt = by lt
+
+    refute-example₁ : {Anything : Set} (a : ℕ) → a ≡ 2 * a + 1 → Anything
+    refute-example₁ a eq = {!refute eq!}
+   
+    refute-example₂ : {Anything : Set} (a b : ℕ) → a + b < a → Anything
+    refute-example₂ a b lt = {!refute lt!}
+
+    simplify-goal-example : (a b : ℕ) → a ∸ b ≡ b ∸ a → a ≡ b
+    simplify-goal-example  zero    b      eq = by eq
+    simplify-goal-example (suc a)  zero   eq = {!refute eq!}
+    simplify-goal-example (suc a) (suc b) eq =
+      {!simplify-goal (simplify-goal-example a b eq)!}
+
+    lemma : (a b : ℕ) → a + b ≡ 0 → a ≡ 0
+    lemma zero    b eq = refl
+    lemma (suc a) b eq = {!refute eq!}
+   
+    simplify-example : ∀ a b → (a + 1) * (b + 1) ≡ a * b + 1 → a ≡ 0
+    simplify-example a b eq = {!simplify eq λ eq′ → lemma a b eq′!}
+   
+    induction-example : ∀ n → sum (downFrom n) * 2 ≡ n * (n + 1)
+    induction-example = {!induction!}
+
