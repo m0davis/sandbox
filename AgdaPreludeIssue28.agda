@@ -17,104 +17,9 @@ module AgdaPreludeIssue28 where
     ≤ₛ→≤ₚ a≤ₛb with ≤⇒≤″ a≤ₛb
     ≤ₛ→≤ₚ _ | less-than-or-equal {k = k} a+k≡b = diff k (by a+k≡b)
 
-  open import Agda.Builtin.Reflection using (Name)
-  module Adapter (`_≤ₐ_ `≤ₐ→≤₀ `≤₀→≤ₐ : Name) where
-    open import Prelude
-    open import Tactic.Reflection
-    open import Tactic.Nat hiding (auto; by; refute; simplify-goal; simplify; induction) public
-    open import Tactic.Nat.Subtract.Simplify using (simplifygoal-tactic; simplifysub-tactic)
-
-    private
-      a→0 : Type → Term
-      a→0 (def operator _) = ifYes operator == `_≤ₐ_ then def₀ `≤ₐ→≤₀ else def₀ (quote id)
-      a→0 _ = def₀ (quote id) -- TODO?
-
-      0→a : Type → Term
-      0→a (def operator _) = ifYes operator == `_≤ₐ_ then def₀ `≤₀→≤ₐ else def₀ (quote id)
-      0→a _ = def₀ (quote id) -- TODO?
-
-    run-autosub-tactic : Tactic
-    run-autosub-tactic holeₐ = do
-      goalₐ ← inferType holeₐ -|
-      hole₀ := a→0 goalₐ `$ holeₐ -|
-      (holeₐ =′_) ∘ (0→a goalₐ `$_) =<< autosub-tactic =<< inferType =<< normalise hole₀
-
-    run-by-tactic : Term → Tactic
-    run-by-tactic prfₐ holeₐ = do
-      goalₐ ← inferType holeₐ -|
-      hole₀ := a→0 goalₐ `$ holeₐ -|
-      Prfₐ ← inferType prfₐ -|
-      prf₀ := a→0 Prfₐ `$ prfₐ -|
-      (holeₐ =′_) ∘ (0→a goalₐ `$_) =<< by-tactic prf₀ =<< inferType =<< normalise hole₀
-
-    run-refutesub-tactic : Term → Tactic
-    run-refutesub-tactic prfₐ holeₐ = do
-      Prfₐ ← inferType prfₐ -|
-      prf₀ := a→0 Prfₐ `$ prfₐ -|
-      (holeₐ =′_) =<< refutesub-tactic prf₀
-
-    run-simplifygoal-tactic : Tactic
-    run-simplifygoal-tactic holeₐ = do
-      goalₐ ← inferFunctionTarget holeₐ -|
-      s-goal₀ ← simplifygoal-tactic =<< inferFunctionTarget (a→0 goalₐ `∘ holeₐ) -|
-      holeₐ =′ 0→a goalₐ `∘ s-goal₀ `∘ a→0 goalₐ
-
-    run-simplifysub-tactic : Term → Tactic 
-    run-simplifysub-tactic prfₐ holeₐ =
-      goalₐ ← inferFunctionTarget holeₐ -|
-      Prfₐ ← inferType prfₐ -|
-      prf₀ := a→0 Prfₐ `$ prfₐ -|
-      s-goal₀ ← simplifysub-tactic prf₀ =<< inferFunctionTarget (a→0 goalₐ `∘ holeₐ) -|
-      holeₐ =′ (`λ $ 0→a goalₐ `$ weaken 1 s-goal₀ `$ `λ $ a→0 goalₐ `$ var₁ 1 (0→a Prfₐ `$ var₀ 0))
-
-    run-induction-tactic : Tactic
-    run-induction-tactic holeₐ = do
-      goalₐ ← caseM inferType holeₐ of (λ
-      { (pi _ (abs _ t)) → pure t
-      ; (meta x _) → blockOnMeta x
-      ; _ → typeErrorS "Induction tactic must be applied to a function goal"
-      }) -|
-      hole₀ ← (a→0 goalₐ `∘ holeₐ) :′ unknown -|
-      caseM inferType hole₀ of λ
-      { (pi a b)   →
-          let P = lam visible b
-              inStepCxt : {A : Set} → TC A → TC A
-              inStepCxt {_} = λ′ (vArg (quoteTerm Nat)) ∘
-                              λ′ (vArg unknown) in
-          do base ← unknown :′ unknown -|
-             step ← inStepCxt $ unknown :′ unknown -|
-             holeₐ =′ 0→a goalₐ `∘ def₃ (quote nat-induction)
-                                        P
-                                        base
-                                        (`λ $ `λ step) ~|
-             base =′_ =<< autosub-tactic =<< inferType base ~|
-             inStepCxt (step =′_ =<< by-tactic (var₀ 0) =<< inferType step)
-      ; (meta x _) → blockOnMeta x
-      ; _          → typeErrorS "Induction tactic must be applied to a function goal"
-      }
-
-    macro
-      auto : Tactic
-      auto = run-autosub-tactic
-  
-      by : Term → Tactic
-      by = run-by-tactic
-
-      refute : Term → Tactic
-      refute = run-refutesub-tactic
-
-      simplify-goal : Tactic
-      simplify-goal = run-simplifygoal-tactic
-  
-      simplify : Term → Tactic
-      simplify = run-simplifysub-tactic
-
-      induction : Tactic
-      induction = run-induction-tactic
-
   module AgdaPreludeTest where
     open import Prelude
-    open Adapter (quote _≤_) (quote id) (quote id)
+    open import Tactic.Nat.Adapter (quote _≤_) (quote id) (quote id)
 
     auto-example₁ : (a b : Nat) → (a - b) * (a + b) ≡ a ^ 2 - b ^ 2
     auto-example₁ a b = auto
@@ -189,7 +94,7 @@ module AgdaPreludeIssue28 where
     n ^ suc m = n ^ m * n
     
     open EquivalenceOf≤
-    open Adapter (quote _≤_) (quote ≤ₛ→≤ₚ) (quote ≤ₚ→≤ₛ)
+    open import Tactic.Nat.Adapter (quote _≤_) (quote ≤ₛ→≤ₚ) (quote ≤ₚ→≤ₛ)
 
     auto-example₁ : (a b : ℕ) → (a ∸ b) * (a + b) ≡ a ^ 2 ∸ b ^ 2
     auto-example₁ a b = auto
