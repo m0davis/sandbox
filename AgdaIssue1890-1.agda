@@ -1,4 +1,4 @@
-module AgdaIssue1890 where
+module AgdaIssue1890-1 where
   open import Prelude
   open import Tactic.Reflection
 
@@ -7,26 +7,26 @@ module AgdaIssue1890 where
 
     `R₀ : Type
     `R₀ = def₀ (quote R)
-
+    
     `R₁ : Term → Type
     `R₁ = def₁ (quote R)
-
+    
     `Nat : Type
     `Nat = def₀ (quote Nat)
-
+    
     helper-type₀ : Type
     helper-type₀ = `R₀ `→ `R₀
-
+   
     helper-type₁ : Type
     helper-type₁ = `R₁ `Nat `→ `R₁ `Nat
-
+   
     helper-term : Term
     helper-term = var₀ 0
-
+   
     helper-patterns : List (Arg Pattern)
     helper-patterns = vArg (var "_") ∷
                       []
-
+   
     macro
       mac₀ : Tactic
       mac₀ hole =
@@ -48,6 +48,6 @@ module AgdaIssue1890 where
 
   outside-module-fails₀ : Set
   outside-module-fails₀ = {!mac₀ Nat!}
-
+    
   outside-module-succeeds₁ : Set
   outside-module-succeeds₁ = {!mac₁ Nat!}
