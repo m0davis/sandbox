@@ -131,7 +131,7 @@ module RerightDoneRight where
       Γ' := snd PS -|
       t' ← applyₜ (Γ' ++ Γ) t -|
       lift $ pure $ clause ps' Γ' t'
-    _⟶ₜ_.applyₜ TClause Γ (absurd-clause ps) = (mapStateT (just ∘ runIdentity) $ runStateT (applyₚ ps) []) >>= λ PS → lift $ pure $ absurd-clause (fst PS)
+    _⟶ₜ_.applyₜ TClause Γ (absurd-clause ps) = (mapStateT (just ∘ runIdentity) $ runStateT (applyₚ ps) []) >>= lift ∘′ pure ∘ absurd-clause ∘ fst
     
     _⟶ₜ_.applyₜ TArgTerm Γ t = traverse (applyₜ Γ) t
     
@@ -139,7 +139,7 @@ module RerightDoneRight where
     
     _⟶ₚ_.applyₚ TPattern (con c ps) = applyₚ ps >>= λ ps' → lift $ lift $ mkIdentity $ con c ps'
     _⟶ₚ_.applyₚ TPattern dot = lift $ pure dot
-    _⟶ₚ_.applyₚ TPattern (var s) = lift get >>= λ ℓ → modify (ℓ ∷_) >> lift (modify nextLabel) >> (lift $ lift $ mkIdentity $ var ℓ s)
+    _⟶ₚ_.applyₚ TPattern (var s) = lift get >>= λ ℓ → modify (ℓ ∷_) >> lift (modify nextLabel) >> (lift ∘′ lift ∘ mkIdentity $ var ℓ s)
     _⟶ₚ_.applyₚ TPattern (lit l) = lift $ pure $ lit l
     _⟶ₚ_.applyₚ TPattern (proj f) = lift $ pure $ proj f
     _⟶ₚ_.applyₚ TPattern absurd = lift $ pure absurd
