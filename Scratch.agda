@@ -1,6 +1,9 @@
 --{-# OPTIONS --show-implicit #-}
 module Scratch where
 
+module StandardLibrary where
+  open import Data.Vec
+
 module ShowExtendedLambda where
   open import Prelude
 
