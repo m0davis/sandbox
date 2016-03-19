@@ -190,6 +190,14 @@ module RerightDoneRight where
         {LC} : ContextLabels ∣LC∣
         G : TCContext LC
 
+    mgetContext : List (Arg Type) → StateT Label Maybe Context
+    mgetContext [] = pure (Ctx [])
+    mgetContext (t ∷ ts) = do
+      cs ← mgetContext ts -|
+      c ← mkTCContext₀' t (Context.G cs) -|
+      pure (Ctx (snd c))
+
+
     getContext'' : TC (Maybe Context)
     getContext'' = do
      Γ ← getContext -|
@@ -206,3 +214,90 @@ module RerightDoneRight where
    
     foo : ∀ {α} (A : Set α) → (a b : A) → a ≡ b
     foo A a b = {!testContext'!}
+    {-
+    just
+    (Ctx
+     ((3 , arg (arg-info visible relevant) (Reflection/Label.var 1 []))
+      ∷
+      ((2 , arg (arg-info visible relevant) (Reflection/Label.var 1 []))
+       ∷
+       ((1 ,
+         arg (arg-info visible relevant)
+         (Reflection/Label.agda-sort
+          (Reflection/Label.set (Reflection/Label.var 0 []))))
+        ∷
+        ((0 ,
+          arg (arg-info hidden relevant)
+          (Reflection/Label.def (quote Level) []))
+         ∷ [])))))
+    -}
+
+  module TermInContext where
+    open import Prelude
+    open import Control.Monad.State
+    open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+
+    open Label=Nat
+    open Context hiding (foo)
+
+    data LabeledTerm' : Set where
+      lt : ∀ {∣Γ∣} → {Γ : ContextLabels ∣Γ∣} → LabeledTerm Γ → LabeledTerm'
+
+    open _⟶ₜ_ ⦃ … ⦄
+    
+    interpretTermInContext : (C : Context) → Term → StateT Label Maybe (LabeledTerm (Context.LC C))
+    interpretTermInContext (Ctx {LC = CL} G) t = applyₜ CL t
+
+    interpretTermInContext' : (C : Context) → Term → StateT Label Maybe LabeledTerm'
+    interpretTermInContext' (Ctx {LC = CL} G) t = lt <$> applyₜ CL t
+
+    macro
+      testTermInContext : Term → Tactic
+      testTermInContext t hole = do
+        Γ ← getContext -|
+        T ← inferType t -|
+        q ← quoteTC $ evalStateT (do
+          C ← mgetContext Γ -|
+          τ ← interpretTermInContext' C t -|
+          Tτ ← interpretTermInContext' C T -|
+          pure (τ , Tτ , C)
+          ) firstLabel -|
+        typeError [ termErr q ]
+        
+
+    foo : ∀ {α} (A : Set α) → (a b : A) → a ≡ b → Set
+    foo A a b a≡b = {!testTermInContext a≡b!}
+    {-
+    just
+    (lt (Reflection/Label.var 4 []) ,
+     lt
+     (Reflection/Label.def (quote _≡_)
+      (arg (arg-info hidden relevant) (Reflection/Label.var 0 []) ∷
+       arg (arg-info hidden relevant) (Reflection/Label.var 1 []) ∷
+       arg (arg-info visible relevant) (Reflection/Label.var 2 []) ∷
+       arg (arg-info visible relevant) (Reflection/Label.var 3 []) ∷ []))
+     ,
+     Ctx
+     ((4 ,
+       arg (arg-info visible relevant)
+       (Reflection/Label.def (quote _≡_)
+        (arg (arg-info hidden relevant) (Reflection/Label.var 0 []) ∷
+         arg (arg-info hidden relevant) (Reflection/Label.var 1 []) ∷
+         arg (arg-info visible relevant) (Reflection/Label.var 2 []) ∷
+         arg (arg-info visible relevant) (Reflection/Label.var 3 []) ∷ [])))
+      ∷
+      ((3 , arg (arg-info visible relevant) (Reflection/Label.var 1 []))
+       ∷
+       ((2 , arg (arg-info visible relevant) (Reflection/Label.var 1 []))
+        ∷
+        ((1 ,
+          arg (arg-info visible relevant)
+          (Reflection/Label.agda-sort
+           (Reflection/Label.set (Reflection/Label.var 0 []))))
+         ∷
+         ((0 ,
+           arg (arg-info hidden relevant)
+           (Reflection/Label.def (quote Level) []))
+          ∷ []))))))
+    -}
