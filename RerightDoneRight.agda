@@ -60,7 +60,7 @@ module RerightDoneRight where
                ; Sort to LabeledSort
                ; Clause to LabeledClause
                ; Pattern to LabeledPattern
-               ; Context to LabeledContext
+               ; Context to ContextLabels
                )
       public
    
@@ -68,16 +68,16 @@ module RerightDoneRight where
     open import Control.Monad.Identity
    
     infix 1 _⟶ₜ_
-    record _⟶ₜ_ (A : Set) (B : ∀ {∣Γ∣} → LabeledContext ∣Γ∣ → Set) : Set where
+    record _⟶ₜ_ (A : Set) (B : ∀ {∣Γ∣} → ContextLabels ∣Γ∣ → Set) : Set where
       field
-        applyₜ : ∀ {∣Γ∣} → (Γ : LabeledContext ∣Γ∣) → A → StateT Label Maybe (B Γ)
+        applyₜ : ∀ {∣Γ∣} → (Γ : ContextLabels ∣Γ∣) → A → StateT Label Maybe (B Γ)
    
     open _⟶ₜ_ ⦃ … ⦄
    
     infix 1 _⟶ₚ_
     record _⟶ₚ_ (A : Set) (B : Set) : Set where
       field
-        applyₚ : A → StateT (∃ λ ∣Γ∣ → LabeledContext ∣Γ∣) (StateT Label Identity) B
+        applyₚ : A → StateT (∃ λ ∣Γ∣ → ContextLabels ∣Γ∣) (StateT Label Identity) B
    
     open _⟶ₚ_ ⦃ … ⦄
    
@@ -163,11 +163,11 @@ module RerightDoneRight where
 
     open _⟶ₜ_ ⦃ … ⦄
 
-    data TCContext : ∀ {∣Γ∣} → LabeledContext ∣Γ∣ → Set where
+    data TCContext : ∀ {∣Γ∣} → ContextLabels ∣Γ∣ → Set where
       [] : TCContext []
-      _∷_ : ∀ {∣Γ∣} {Γ : LabeledContext ∣Γ∣} → (τ : Label × Arg (LabeledTerm Γ)) → TCContext Γ → TCContext (fst τ ∷ Γ)
+      _∷_ : ∀ {∣Γ∣} {Γ : ContextLabels ∣Γ∣} → (τ : Label × Arg (LabeledTerm Γ)) → TCContext Γ → TCContext (fst τ ∷ Γ)
    
-    mkTCContext₀' : Arg Type → ∀ {∣Γ∣} → {Γ : LabeledContext ∣Γ∣} → TCContext Γ → StateT Label Maybe (∃ λ ℓ → TCContext (ℓ ∷ Γ))
+    mkTCContext₀' : Arg Type → ∀ {∣Γ∣} → {Γ : ContextLabels ∣Γ∣} → TCContext Γ → StateT Label Maybe (∃ λ ℓ → TCContext (ℓ ∷ Γ))
     mkTCContext₀' τ {Γ = Γ} TCΓ = do
       τ' ← applyₜ Γ τ -|
       ℓ ← modify nextLabel -|
@@ -187,7 +187,7 @@ module RerightDoneRight where
       constructor Ctx
       field
         {∣LC∣} : Nat
-        {LC} : LabeledContext ∣LC∣
+        {LC} : ContextLabels ∣LC∣
         G : TCContext LC
 
     getContext'' : TC (Maybe Context)
