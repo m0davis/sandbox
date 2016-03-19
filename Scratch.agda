@@ -35,3 +35,21 @@ module ShowExtendedLambda where
 
   foo : Set
   foo = {!showDef example-of-patlam!}
+
+module CannotInstantiateMetavariable where
+  postulate
+    I : Set → Set
+    bind : ∀ {𝑨 𝑩 : Set} → I 𝑨 → (𝑨 → I 𝑩) → I 𝑩
+    A : Set
+    B : A → Set
+    action : (a : A) → I (B a)
+    IA : I A
+
+  foo : I (∀ {α : A} → B α)
+  foo = bind {A} {{!_!}} IA {!action!}
+  {-
+  Cannot instantiate the metavariable _53 to solution (B a) since it
+  contains the variable a which is not in scope of the metavariable
+  or irrelevant in the metavariable but relevant in the solution
+  when checking that the expression action has type A → I ?1  
+  -}
