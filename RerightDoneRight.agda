@@ -318,9 +318,13 @@ module RerightDoneRight where
     open import Relation.Binary.PropositionalEquality.Core
     open import Container.Traversable
 
-    lookupDeBruijn : Nat → ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) (ℓ : Label) → Maybe Nat
-    lookupDeBruijn k [] ℓ = nothing
-    lookupDeBruijn k (ℓₜ ∷ LC) ℓ = ifYes ℓₜ == ℓ then just k else lookupDeBruijn (suc k) LC ℓ
+    lookupDeBruijn : ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) (ℓ : Label) → Maybe Nat
+    lookupDeBruijn LC ℓ = go 0 LC where
+      go : Nat → ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) → Maybe Nat
+      go k [] = nothing
+      go k (ℓₜ ∷ LC) with ℓₜ == ℓ
+      … | yes _ = just k
+      … | no _ = go (suc k) LC
 
     {-# TERMINATING #-}
     toPattern : LabeledPattern → Pattern
@@ -333,7 +337,7 @@ module RerightDoneRight where
 
     {-# TERMINATING #-}
     backToTerm : ∀ {∣LC∣ : Nat} {LC : ContextLabels ∣LC∣} → LabeledTerm LC → Maybe Term
-    backToTerm {LC = LC} (var x args) = var <$> lookupDeBruijn 0 LC x <*> (traverse ∘ traverse $ (backToTerm)) args
+    backToTerm {LC = LC} (var x args) = var <$> lookupDeBruijn LC x <*> (traverse ∘ traverse $ (backToTerm)) args
     backToTerm (con c args) = con c <$> (traverse ∘ traverse $ backToTerm) args
     backToTerm (def f args) = def f <$> (traverse ∘ traverse $ backToTerm) args
     backToTerm (lam ℓ v t) = lam v <$> (traverse $ backToTerm) t
