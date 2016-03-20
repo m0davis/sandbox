@@ -252,9 +252,6 @@ module RerightDoneRight where
     interpretTermInContext : (C : Context) → Term → StateT Label Maybe (LabeledTerm (Context.LC C))
     interpretTermInContext (Ctx {LC = CL} G) t = applyₜ CL t
 
-    interpretTermInContext' : (C : Context) → Term → StateT Label Maybe LabeledTerm'
-    interpretTermInContext' (Ctx {LC = CL} G) t = lt <$> applyₜ CL t
-
     macro
       testTermInContext : Term → Tactic
       testTermInContext t hole = do
@@ -262,14 +259,14 @@ module RerightDoneRight where
         T ← inferType t -|
         q ← quoteTC $ evalStateT (do
           C ← mgetContext Γ -|
-          τ ← interpretTermInContext' C t -|
-          Tτ ← interpretTermInContext' C T -|
+          τ ← lt <$> interpretTermInContext C t -|
+          Tτ ← lt <$> interpretTermInContext C T -|
           pure (τ , Tτ , C)
           ) firstLabel -|
         typeError [ termErr q ]
         
 
-    foo : ∀ {α} (A : Set α) → (a b : A) → a ≡ b → Set
+    foo : ∀ {α : Level} (A : Set α) → (a b : A) → a ≡ b → Set
     foo A a b a≡b = {!testTermInContext a≡b!}
     {-
     just
@@ -364,13 +361,10 @@ module RerightDoneRight where
         T ← inferType t -|
         q ← quoteTC $ evalStateT (do
           C ← mgetContext Γ -|
-          τ ← interpretTermInContext' C t -|
-          Tτ ← interpretTermInContext' C T -|
-          ℓ ← get -|
-          Tτ' := backToTerm (Context.LC C) <$> evalStateT (interpretTermInContext C T) ℓ -| -- snd $ snd $ unLabeledTerm' Tτ
-          asdf ← interpretTermInContext C T -|
-          Tt'' := backToTerm (Context.LC C) asdf -|
-          pure (τ , Tτ , Tτ' , Tt'' , C)
+          τ ← lt <$> interpretTermInContext C t -|
+          Tτ ← lt <$> interpretTermInContext C T -|
+          Tτ' ← backToTerm (Context.LC C) <$> interpretTermInContext C T -|
+          pure (τ , Tτ , Tτ' , C)
           ) firstLabel -|
         typeError [ termErr q ]
 
