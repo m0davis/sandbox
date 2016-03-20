@@ -57,3 +57,30 @@ module CannotInstantiateMetavariable where
   or irrelevant in the metavariable but relevant in the solution
   when checking that the expression action has type A → M ?1  
   -}
+
+module UnsolvedMetas where
+  open import Prelude
+  postulate
+    M : Set → Set
+    instance
+      MonadM : Monad M
+      FunctorM : Functor M
+    A : Set
+    B : A → Set
+    action : (a : A) → M (B a)    
+    mask : ∀ {a : A} → B a → A
+    MA : M A
+    c : A
+
+  foo : M (A × A)
+  foo = MA >>= λ ma → action ma >>= λ b → return (mask b , c)
+
+  data Masked : Set where
+    mask' : ∀ {a : A} → B a → Masked
+
+  bar : M _
+  bar = do
+    ma ← MA -|
+    b ← action ma -|
+    b' ← mask' <$> action ma -|
+    return (b' , mask' b , c)
