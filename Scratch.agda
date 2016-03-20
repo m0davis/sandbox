@@ -3,6 +3,7 @@ module Scratch where
 
 module StandardLibrary where
   open import Data.Vec
+  open import Relation.Binary
 
 module ShowExtendedLambda where
   open import Prelude
@@ -37,19 +38,22 @@ module ShowExtendedLambda where
   foo = {!showDef example-of-patlam!}
 
 module CannotInstantiateMetavariable where
+  open import Prelude using (∃)
   postulate
-    I : Set → Set
-    bind : ∀ {𝑨 𝑩 : Set} → I 𝑨 → (𝑨 → I 𝑩) → I 𝑩
+    M : Set → Set
+    bind : ∀ {𝑨 𝑩 : Set} → M 𝑨 → (𝑨 → M 𝑩) → M 𝑩
+    bind' : ∀ {𝑨 : Set} {𝑩 : 𝑨 → Set} → M 𝑨 → ((a : 𝑨) → M (𝑩 a)) → ∃ λ a → M (𝑩 a)
     A : Set
     B : A → Set
-    action : (a : A) → I (B a)
-    IA : I A
+    action : (a : A) → M (B a)
+    MA : M A
 
-  foo : I (∀ {α : A} → B α)
-  foo = bind {A} {{!_!}} IA {!action!}
+  foo : ∃ λ α → M (B α)
+  foo = --bind {A} {{!!}} MA {!action!}
+        bind' {A} {B} MA action
   {-
   Cannot instantiate the metavariable _53 to solution (B a) since it
   contains the variable a which is not in scope of the metavariable
   or irrelevant in the metavariable but relevant in the solution
-  when checking that the expression action has type A → I ?1  
+  when checking that the expression action has type A → M ?1  
   -}
