@@ -244,6 +244,9 @@ module RerightDoneRight where
     data LabeledTerm' : Set where
       lt : ∀ {∣Γ∣} → {Γ : ContextLabels ∣Γ∣} → LabeledTerm Γ → LabeledTerm'
 
+    contextLabelsOfLabeledTerm' : LabeledTerm' → ∃ λ ∣Γ∣ → ContextLabels ∣Γ∣
+    contextLabelsOfLabeledTerm' (lt {∣Γ∣} {CL} _) = _ , CL
+
     open _⟶ₜ_ ⦃ … ⦄
     
     interpretTermInContext : (C : Context) → Term → StateT Label Maybe (LabeledTerm (Context.LC C))
@@ -301,3 +304,75 @@ module RerightDoneRight where
            (Reflection/Label.def (quote Level) []))
           ∷ []))))))
     -}
+
+  module BackToBuiltin where
+    open import Prelude
+    open import Control.Monad.State
+    open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+
+    open Label=Nat
+    open Context hiding (foo)
+    open TermInContext hiding (foo)
+
+    open _⟶ₜ_ ⦃ … ⦄
+
+    open import Tactic.Reflection.Reright
+    open import Relation.Binary.PropositionalEquality.Core
+    open import Container.Traversable
+
+    lookupDeBruijn : Nat → ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) (ℓ : Label) → Maybe Nat
+    lookupDeBruijn k [] ℓ = nothing
+    lookupDeBruijn k (ℓₜ ∷ LC) ℓ = ifYes ℓₜ == ℓ then just k else lookupDeBruijn (suc k) LC ℓ
+
+    {-# TERMINATING #-}
+    toPattern : LabeledPattern → Pattern
+    toPattern (con c ps) = con c $ (fmap ∘ fmap) toPattern $ ps 
+    toPattern dot = dot
+    toPattern (var ℓ s) = var s
+    toPattern (lit l) = lit l
+    toPattern (proj f) = proj f
+    toPattern absurd = absurd
+
+    {-# TERMINATING #-}
+    backToTerm : ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) → LabeledTerm LC → Maybe Term
+    backToTerm LC (var x args) = var <$> lookupDeBruijn 0 LC x <*> (traverse ∘ traverse $ (backToTerm LC)) args
+    backToTerm LC (con c args) = con c <$> (traverse ∘ traverse $ backToTerm LC) args 
+    backToTerm LC (def f args) = def f <$> (traverse ∘ traverse $ backToTerm LC) args
+    backToTerm LC (lam ℓ v t) = lam v <$> (traverse $ backToTerm (ℓ ∷ LC)) t
+    backToTerm LC (pat-lam cs) = pat-lam <$> (traverse backToTerm') cs <*> pure [] where
+      backToTerm' : LabeledClause LC → Maybe Clause
+      backToTerm' (clause ps Γₚₛ t) = clause ((fmap ∘ fmap $ toPattern) ps) <$> backToTerm (Γₚₛ v++ LC) t
+      backToTerm' (absurd-clause ps) = (pure ∘ absurd-clause) ((fmap ∘ fmap $ toPattern) ps)
+    backToTerm LC (pi ℓ a b) = pi <$> traverse (backToTerm LC) a <*> traverse (backToTerm (ℓ ∷ LC)) b
+    backToTerm LC (agda-sort s) = agda-sort <$> backToTerm' s where
+      backToTerm' : LabeledSort LC → Maybe Sort
+      backToTerm' (set t) = set <$> backToTerm LC t
+      backToTerm' (lit n) = pure $ lit n
+      backToTerm' unknown = pure unknown
+    backToTerm LC (lit l) = pure $ lit l
+    backToTerm LC (meta x args) = meta x <$> (traverse ∘ traverse $ backToTerm LC) args
+    backToTerm LC unknown = pure unknown
+
+    unLabeledTerm' : LabeledTerm' → ∃ λ ∣Γ∣ → ∃ λ (Γ : ContextLabels ∣Γ∣) → LabeledTerm Γ
+    unLabeledTerm' (lt {∣Γ∣} {Γ} t) = ∣Γ∣ , Γ , t
+
+    macro
+      testBackToTerm : Term → Tactic
+      testBackToTerm t hole = do
+        Γ ← getContext -|
+        T ← inferType t -|
+        q ← quoteTC $ evalStateT (do
+          C ← mgetContext Γ -|
+          τ ← interpretTermInContext' C t -|
+          Tτ ← interpretTermInContext' C T -|
+          ℓ ← get -|
+          Tτ' := backToTerm (Context.LC C) <$> evalStateT (interpretTermInContext C T) ℓ -| -- snd $ snd $ unLabeledTerm' Tτ
+          asdf ← interpretTermInContext C T -|
+          Tt'' := backToTerm (Context.LC C) asdf -|
+          pure (τ , Tτ , Tτ' , Tt'' , C)
+          ) firstLabel -|
+        typeError [ termErr q ]
+
+    foo : ∀ {α} (A : Set α) → (a b : A) → a ≡ b → Set
+    foo A a b a≡b = {!testBackToTerm a≡b!}
