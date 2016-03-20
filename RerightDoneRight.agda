@@ -332,24 +332,24 @@ module RerightDoneRight where
     toPattern absurd = absurd
 
     {-# TERMINATING #-}
-    backToTerm : ∀ {∣LC∣ : Nat} (LC : ContextLabels ∣LC∣) → LabeledTerm LC → Maybe Term
-    backToTerm LC (var x args) = var <$> lookupDeBruijn 0 LC x <*> (traverse ∘ traverse $ (backToTerm LC)) args
-    backToTerm LC (con c args) = con c <$> (traverse ∘ traverse $ backToTerm LC) args
-    backToTerm LC (def f args) = def f <$> (traverse ∘ traverse $ backToTerm LC) args
-    backToTerm LC (lam ℓ v t) = lam v <$> (traverse $ backToTerm (ℓ ∷ LC)) t
-    backToTerm LC (pat-lam cs) = pat-lam <$> (traverse backToTerm') cs <*> pure [] where
+    backToTerm : ∀ {∣LC∣ : Nat} {LC : ContextLabels ∣LC∣} → LabeledTerm LC → Maybe Term
+    backToTerm {LC = LC} (var x args) = var <$> lookupDeBruijn 0 LC x <*> (traverse ∘ traverse $ (backToTerm)) args
+    backToTerm (con c args) = con c <$> (traverse ∘ traverse $ backToTerm) args
+    backToTerm (def f args) = def f <$> (traverse ∘ traverse $ backToTerm) args
+    backToTerm (lam ℓ v t) = lam v <$> (traverse $ backToTerm) t
+    backToTerm {LC = LC} (pat-lam cs) = pat-lam <$> (traverse backToTerm') cs <*> pure [] where
       backToTerm' : LabeledClause LC → Maybe Clause
-      backToTerm' (clause ps Γₚₛ t) = clause ((fmap ∘ fmap $ toPattern) ps) <$> backToTerm (Γₚₛ v++ LC) t
+      backToTerm' (clause ps Γₚₛ t) = clause ((fmap ∘ fmap $ toPattern) ps) <$> backToTerm t
       backToTerm' (absurd-clause ps) = (pure ∘ absurd-clause) ((fmap ∘ fmap $ toPattern) ps)
-    backToTerm LC (pi ℓ a b) = pi <$> traverse (backToTerm LC) a <*> traverse (backToTerm (ℓ ∷ LC)) b
-    backToTerm LC (agda-sort s) = agda-sort <$> backToTerm' s where
+    backToTerm (pi ℓ a b) = pi <$> traverse (backToTerm) a <*> traverse (backToTerm) b
+    backToTerm {LC = LC} (agda-sort s) = agda-sort <$> backToTerm' s where
       backToTerm' : LabeledSort LC → Maybe Sort
-      backToTerm' (set t) = set <$> backToTerm LC t
+      backToTerm' (set t) = set <$> backToTerm t
       backToTerm' (lit n) = pure $ lit n
       backToTerm' unknown = pure unknown
-    backToTerm LC (lit l) = pure $ lit l
-    backToTerm LC (meta x args) = meta x <$> (traverse ∘ traverse $ backToTerm LC) args
-    backToTerm LC unknown = pure unknown
+    backToTerm (lit l) = pure $ lit l
+    backToTerm (meta x args) = meta x <$> (traverse ∘ traverse $ backToTerm) args
+    backToTerm unknown = pure unknown
 
     unLabeledTerm' : LabeledTerm' → ∃ λ ∣Γ∣ → ∃ λ (Γ : ContextLabels ∣Γ∣) → LabeledTerm Γ
     unLabeledTerm' (lt {∣Γ∣} {Γ} t) = ∣Γ∣ , Γ , t
@@ -363,7 +363,7 @@ module RerightDoneRight where
           C ← mgetContext Γ -|
           τ ← lt <$> interpretTermInContext C t -|
           Tτ ← lt <$> interpretTermInContext C T -|
-          Tτ' ← backToTerm (Context.LC C) <$> interpretTermInContext C T -|
+          Tτ' ← backToTerm <$> interpretTermInContext C T -|
           pure (τ , Tτ , Tτ' , C)
           ) firstLabel -|
         typeError [ termErr q ]
