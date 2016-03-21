@@ -55,7 +55,7 @@ module CannotInstantiateMetavariable where
   Cannot instantiate the metavariable _53 to solution (B a) since it
   contains the variable a which is not in scope of the metavariable
   or irrelevant in the metavariable but relevant in the solution
-  when checking that the expression action has type A → M ?1  
+  when checking that the expression action has type A → M ?1
   -}
 
 module UnsolvedMetas where
@@ -67,7 +67,7 @@ module UnsolvedMetas where
       FunctorM : Functor M
     A : Set
     B : A → Set
-    action : (a : A) → M (B a)    
+    action : (a : A) → M (B a)
     mask : ∀ {a : A} → B a → A
     MA : M A
     c : A
