@@ -14,28 +14,34 @@ module RerightDoneRight where
       xs-is-empty : x ∉ []
       not-in-xs : {head : A} {tail : UniqueSnoc A} → (head∉tail : head ∉ tail) → ¬ x ≡ head → x ∉ (tail ∷ head∉tail)
 
-  module UniqueVec₁ where
-    open import Data.Nat
-    open import Relation.Nullary
+  module MVec! where
+    open import Prelude hiding (Vec; Fin; _++_)
     open import Function
     open import Relation.Binary.PropositionalEquality
 
-    data UniqueVec {a} (A : Set a) : ℕ → Set a
-    data _∉_ {a} {A : Set a} (x : A) : {n : ℕ} → UniqueVec A n → Set a
+    data Vec! {a} (A : Set a) : Nat → Set a
+    data _∉_ {a} {A : Set a} (x : A) : {n : Nat} → Vec! A n → Set a
 
-    data UniqueVec {a} (A : Set a) where
-      [] : UniqueVec A zero
-      _∷_ : ∀ {n} {x : A} (xs : UniqueVec A n) (x∉xs : x ∉ xs) → UniqueVec A (suc n)
+    data Vec! {a} (A : Set a) where
+      [] : Vec! A zero
+      _∷ʳ_ : ∀ {n} {x : A} (xs : Vec! A n) (x∉xs : x ∉ xs) → Vec! A (suc n)
+
+    pattern _∷ᵛ_ a b = b ∷ʳ a
 
     data _∉_ {a} {A : Set a} (x : A) where
-      xs-is-empty  : x ∉ []
-      not-in-xs : ∀ {head : A} {n} {tail : UniqueVec A n} → (head∉tail : head ∉ tail) → ¬ x ≡ head → x ∉ (tail ∷ head∉tail)
+      []  : x ∉ []
+      _∷_ : ∀ {head : A} {n} {tail : Vec! A n} → ¬ x ≡ head → (head∉tail : head ∉ tail) → x ∉ (head∉tail ∷ᵛ tail)
+
+    _++!_ : ∀ {a} {A : Set a} {m n} → {M : Vec! A m} → (N : Vec! A n) → (∀ {x} → ¬ x ∉ M → x ∉ N) → Vec! A (m + n)
+    _++!_ {M = []} N M⊈N = N
+    _++!_ {M = M ∷ʳ x∉xs} N M⊈N = {!!}
 
   module Reflection/Verified (Label : Set) where
     open import Agda.Builtin.Reflection hiding (Term; Type; Sort; Clause; Pattern)
     open import Prelude hiding (Vec; Fin; _++_)
     open import Data.Vec
     open import Data.Fin
+    open MVec!
 
     data Pattern : Set where
       con    : (c : Name) (ps : List (Arg Pattern)) → Pattern
@@ -46,7 +52,7 @@ module RerightDoneRight where
       absurd : Pattern
 
     Context : Nat → Set
-    Context = Vec Label
+    Context = Vec! Label
 
     data Sort {∣Γ∣} (Γ : Context ∣Γ∣) : Set
     data Clause {∣Γ∣} (Γ : Context ∣Γ∣) : Set
@@ -54,12 +60,12 @@ module RerightDoneRight where
     Type = Term
 
     data Term {∣Γ∣} (Γ : Context ∣Γ∣) where
-      var           : {ℓ : Label} {x : Fin ∣Γ∣} → Γ [ x ]= ℓ → (args : List (Arg (Term Γ))) → Term Γ
+      var           : {ℓ : Label} {x : Fin ∣Γ∣} → ¬ ℓ ∉ Γ → (args : List (Arg (Term Γ))) → Term Γ
       con           : (c : Name) (args : List (Arg (Term Γ))) → Term Γ
       def           : (f : Name) (args : List (Arg (Term Γ))) → Term Γ
-      lam           : {ℓ : Label} → (¬ ℓ ∈ Γ) → (v : Visibility) (t : Abs (Term (ℓ ∷ Γ))) → Term Γ
+      lam           : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (v : Visibility) (t : Abs (Term (l∉Γ ∷ᵛ Γ))) → Term Γ
       pat-lam       : (cs : List (Clause Γ)) → Term Γ
-      pi            : {ℓ : Label} → (¬ ℓ ∈ Γ) → (a : Arg (Type Γ)) (b : Abs (Type (ℓ ∷ Γ))) → Term Γ
+      pi            : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (a : Arg (Type Γ)) (b : Abs (Type (l∉Γ ∷ᵛ Γ))) → Term Γ
       agda-sort     : (s : Sort Γ) → Term Γ
       lit           : (l : Literal) → Term Γ
       meta          : (x : Meta) (args : List (Arg (Term Γ))) → Term Γ
@@ -71,7 +77,7 @@ module RerightDoneRight where
       unknown : Sort Γ
 
     data Clause {∣Γ∣} (Γ : Context ∣Γ∣) where
-      clause        : (ps : List (Arg Pattern)) → ∀ {∣Γₚₛ∣} → {Γₚₛ : Context ∣Γₚₛ∣} → (∀ {ℓ} → ℓ ∈ Γₚₛ → ¬ ℓ ∈ Γ) → (t : Term (Γₚₛ ++ Γ)) → Clause Γ
+      clause        : (ps : List (Arg Pattern)) → ∀ {∣Γₚₛ∣} → {Γₚₛ : Context ∣Γₚₛ∣} → (Γₚₛ! : ∀ {ℓ} → ¬ ℓ ∉ Γₚₛ → ℓ ∉ Γ) → (t : Term (Γ ++! Γₚₛ!)) → Clause Γ
       absurd-clause : (ps : List (Arg Pattern)) → Clause Γ
 
   module Reflection/Label (Label : Set) where
