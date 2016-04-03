@@ -58,31 +58,36 @@ data _∉_ {𝑨} {𝐴 : Set 𝑨} (x : 𝐴) : 𝕃 𝐴 → Set 𝑨
 
 data 𝕃 {𝑨} (𝐴 : Set 𝑨) where
   ∅ : 𝕃 𝐴
-  ∷ : {x₀ : 𝐴} → {x₁s : 𝕃 𝐴} → x₀ ∉ x₁s → 𝕃 𝐴
+  ✓ : {x₀ : 𝐴} → {x₁s : 𝕃 𝐴} → x₀ ∉ x₁s → 𝕃 𝐴
 
 data _∉_ {𝑨} {𝐴 : Set 𝑨} (𝔞 : 𝐴) where
   ∉∅ : 𝔞 ∉ ∅
-  ∉∷ : ∀ {x₀} → 𝔞 ≢ x₀ → ∀ {x₁s} → 𝔞 ∉ x₁s → (x₀∉x₁s : x₀ ∉ x₁s) → 𝔞 ∉ (∷ x₀∉x₁s)
+  ∉∷ : ∀ {x₀} → 𝔞 ≢ x₀ → ∀ {x₁s} → 𝔞 ∉ x₁s → (x₀∉x₁s : x₀ ∉ x₁s) → 𝔞 ∉ (✓ x₀∉x₁s)
+
+pattern usecase1 x₀ = ✓ {x₀ = x₀} ∉∅
+pattern usecase2 x₀ x₁ x₂s = ✓ {x₀ = x₀} (∉∷ {x₁} _ {x₂s} _ _)
+pattern usecase3 x₁s = ✓ {x₁s = x₁s} _
+pattern usecase4 x₀∉x₁s = ✓ x₀∉x₁s
 
 𝕃→𝑳 : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝑳 𝐴
 𝕃→𝑳 ∅ = ∅
-𝕃→𝑳 (∷ {x} ∉∅) = x ∷ₗ ∅
-𝕃→𝑳 (∷ {x₀} (∉∷ {x₁} x {x₂s} x3 x4)) = x₀ ∷ₗ x₁ ∷ₗ 𝕃→𝑳 x₂s
+𝕃→𝑳 (usecase1 x) = x ∷ₗ ∅
+𝕃→𝑳 (usecase2 x₀ x₁ x₂s) = x₀ ∷ₗ x₁ ∷ₗ 𝕃→𝑳 x₂s
 
 data _∈_ {𝑨} {𝐴 : Set 𝑨} (𝔞 : 𝐴) : 𝕃 𝐴 → Set 𝑨 where
-  here : ∀ {x₀s} (𝔞∉x₀s : 𝔞 ∉ x₀s) → 𝔞 ∈ ∷ 𝔞∉x₀s
-  there : ∀ {x₁s} → (𝔞∈x₁s : 𝔞 ∈ x₁s) → ∀ {x₀} → (x₀∉x₁s : x₀ ∉ x₁s)  → 𝔞 ∈ ∷ x₀∉x₁s
+  here : ∀ {x₀s} (𝔞∉x₀s : 𝔞 ∉ x₀s) → 𝔞 ∈ ✓ 𝔞∉x₀s
+  there : ∀ {x₁s} → (𝔞∈x₁s : 𝔞 ∈ x₁s) → ∀ {x₀} → (x₀∉x₁s : x₀ ∉ x₁s)  → 𝔞 ∈ ✓ x₀∉x₁s
 
 data _[_]=_ {𝑨} {𝐴 : Set 𝑨} : 𝕃 𝐴 → ℕ → 𝐴 → Set 𝑨 where
-  here  : ∀ {𝔞 xs} (𝔞∉xs : 𝔞 ∉ xs) → ∷ 𝔞∉xs [ 0 ]= 𝔞
-  there : ∀ {x₀ x₁s} (x₀∉x₁s : x₀ ∉ x₁s) {i 𝔞} (x₁s[i]=𝔞 : x₁s [ i ]= 𝔞) → ∷ x₀∉x₁s [ suc i ]= 𝔞
+  here  : ∀ {𝔞 xs} (𝔞∉xs : 𝔞 ∉ xs) → ✓ 𝔞∉xs [ 0 ]= 𝔞
+  there : ∀ {x₀ x₁s} (x₀∉x₁s : x₀ ∉ x₁s) {i 𝔞} (x₁s[i]=𝔞 : x₁s [ i ]= 𝔞) → ✓ x₀∉x₁s [ suc i ]= 𝔞
 
 []=-thm₀ : ∀ {𝑨} {𝐴 : Set 𝑨} {L : 𝕃 𝐴} {n} {a} → L [ n ]= a → a ∉ L → ⊥
 []=-thm₀ (here 𝔞∉xs) (∉∷ x x₁ .𝔞∉xs) = x refl
 []=-thm₀ (there x₀∉x₁s x) (∉∷ x₁ x₂ .x₀∉x₁s) = []=-thm₀ x x₂
 
 data ∅⊂_ {𝑨} {𝐴 : Set 𝑨} : 𝕃 𝐴 → Set 𝑨 where
-  ∅⊂∷ : ∀ {x₀ x₁s} → (x₀∉x₁s : x₀ ∉ x₁s) → ∅⊂ ∷ x₀∉x₁s
+  ∅⊂∷ : ∀ {x₀ x₁s} → (x₀∉x₁s : x₀ ∉ x₁s) → ∅⊂ ✓ x₀∉x₁s
 
 lastIndex : ∀ {𝑨} {𝐴 : Set 𝑨} {L : 𝕃 𝐴} (∅⊂L : ∅⊂ L) → ℕ
 lastIndex (∅⊂∷ ∉∅) = 0
@@ -90,7 +95,7 @@ lastIndex (∅⊂∷ (∉∷ x x₀∉x₁s₁ x₀∉x₁s)) = suc (lastIndex (
 
 length : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → ℕ
 length ∅ = 0
-length (∷ {x₁s = x₁s} _) = suc (length x₁s)
+length (usecase3 x₁s) = suc (length x₁s)
 
 sym' : ∀ {𝑨} {𝐴 : Set 𝑨} {x y : 𝐴} → x ≢ y → y ≢ x
 sym' x₁ x₂ = x₁ (sym x₂)
@@ -137,19 +142,19 @@ a∉bcd = ∉∷ a≢b a∉cd b∉cd
 d∉cab = ∉∷ d≢c d∉ab c∉ab
 d∉cba = ∉∷ d≢c d∉ba c∉ba
 
-[a] = ∷ a∉∅
-[ab] = ∷ a∉b
-[ba] = ∷ b∉a
-[abc] = ∷ a∉bc
-[cab] = ∷ c∉ab
-[cba] = ∷ c∉ba
-[abcd] = ∷ a∉bcd
-[dcab] = ∷ d∉cab
-[dcba] = ∷ d∉cba
+[a] = ✓ a∉∅
+[ab] = ✓ a∉b
+[ba] = ✓ b∉a
+[abc] = ✓ a∉bc
+[cab] = ✓ c∉ab
+[cba] = ✓ c∉ba
+[abcd] = ✓ a∉bcd
+[dcab] = ✓ d∉cab
+[dcba] = ✓ d∉cba
 
 last : ∀ {𝑨} {𝐴 : Set 𝑨} {L} → ∅⊂ L → 𝐴
 last (∅⊂∷ {x₀} {∅} _) = x₀
-last (∅⊂∷ {x₁s = ∷ x₁∉x₂s} _) = last (∅⊂∷ x₁∉x₂s)
+last (∅⊂∷ {x₁s = ✓ x₁∉x₂s} _) = last (∅⊂∷ x₁∉x₂s)
 
 last-thm₁ : ∀ {𝑨} {𝐴 : Set 𝑨} {L : 𝕃 𝐴} → (∅⊂L : ∅⊂ L) → L [ lastIndex ∅⊂L ]= last ∅⊂L
 last-thm₁ (∅⊂∷ ∉∅) = here ∉∅
@@ -158,70 +163,100 @@ last-thm₁ (∅⊂∷ (∉∷ x x₀∉x₁s₁ x₀∉x₁s)) = there (∉∷ 
 mutual
   init : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀s : 𝕃 𝐴} (∅⊂x₀s : ∅⊂ x₀s) → 𝕃 𝐴
   init (∅⊂∷ ∉∅) = ∅
-  init (∅⊂∷ (∉∷ _ x₀∉x₂s x₁∉x₂s)) = ∷ (init∉ (∅⊂∷ _) (∉∷ _ x₀∉x₂s x₁∉x₂s))
+  init (∅⊂∷ (∉∷ _ x₀∉x₂s x₁∉x₂s)) = ✓ (init∉ (∅⊂∷ _) (∉∷ _ x₀∉x₂s x₁∉x₂s))
 
   init∉ : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀ : 𝐴} {x₁s : 𝕃 𝐴} (∅⊂x₁s : ∅⊂ x₁s) → x₀ ∉ x₁s → x₀ ∉ init ∅⊂x₁s
   init∉ () ∉∅
   init∉ (∅⊂∷ _) (∉∷ _ ∉∅ ∉∅) = ∉∅
   init∉ (∅⊂∷ _) (∉∷ x₀≢x₁ (∉∷ x₀≢x₂ x₀∉x₃s x₂∉x₃s) (∉∷ x₁≢x₂ x₁∉x₃s .x₂∉x₃s)) = ∉∷ x₀≢x₁ (init∉ _ (∉∷ x₀≢x₂ x₀∉x₃s x₂∉x₃s)) (init∉ _ (∉∷ x₁≢x₂ x₁∉x₃s x₂∉x₃s))
 
-shiftRight : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} (∅⊂xs : ∅⊂ xs) → last ∅⊂xs ∉ init ∅⊂xs
-shiftRight (∅⊂∷ ∉∅) = ∉∅
-shiftRight (∅⊂∷ {x₀} (∉∷ {x₁} x₀≢x₁ {x₂s} x₀∉x₂s x₁∉x₂s)) =
+rotate∉ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} (∅⊂xs : ∅⊂ xs) → last ∅⊂xs ∉ init ∅⊂xs
+rotate∉ (∅⊂∷ ∉∅) = ∉∅
+rotate∉ (∅⊂∷ {x₀} (∉∷ {x₁} x₀≢x₁ {x₂s} x₀∉x₂s x₁∉x₂s)) =
   let xₙ≢x₀ = let x₁s[last]=lastx₁s = last-thm₁ (∅⊂∷ x₁∉x₂s) in
                   λ lastx₁s≡x₀ →
-                      let x₁s[last]=x₀ : ∷ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]= x₀
-                          x₁s[last]=x₀ = subst (∷ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]=_) lastx₁s≡x₀ x₁s[last]=lastx₁s
+                      let x₁s[last]=x₀ : ✓ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]= x₀
+                          x₁s[last]=x₀ = subst (✓ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]=_) lastx₁s≡x₀ x₁s[last]=lastx₁s
                       in []=-thm₀ x₁s[last]=x₀ (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s)
   in
     ∉∷ xₙ≢x₀
-       (shiftRight (∅⊂∷ x₁∉x₂s))
+       (rotate∉ (∅⊂∷ x₁∉x₂s))
        (init∉ (∅⊂∷ x₁∉x₂s) (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s))
 
-rotateRight : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
-rotateRight ∅ = ∅
-rotateRight (∷ {x₀} ∉∅) = ∷ {x₀ = x₀} ∉∅
-rotateRight (∷ x₀∉x₁s) = ∷ (shiftRight (∅⊂∷ x₀∉x₁s))
+-- rotate "0123456789" = "9012345678"
+rotate : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
+rotate ∅ = ∅
+rotate (✓ {x₀} ∉∅) = ✓ {x₀ = x₀} ∉∅
+rotate (✓ x₀∉x₁s) = ✓ (rotate∉ (∅⊂∷ x₀∉x₁s))
 
-transposeFirst : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
-transposeFirst ∅ = ∅
-transposeFirst (∷ {x₀} ∉∅) = ∷ {x₀ = x₀} ∉∅
-transposeFirst (∷ {x₀} (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s)) = ∷ (∉∷ (sym' x₀≢x₁) x₁∉x₂s x₀∉x₂s)
+rotate-ex : 𝕃→𝑳 (rotate [abcd]) ≡ (⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
+rotate-ex = refl
 
-rotateRightBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-rotateRightBy 0 x = x
-rotateRightBy (suc n) x = rotateRightBy n (rotateRight x)
+-- reseal "0123456789" = "1023456789"
+reseal : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
+reseal ∅ = ∅
+reseal (✓ {x₀} ∉∅) = ✓ {x₀ = x₀} ∉∅
+reseal (✓ (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s)) = ✓ (∉∷ (sym' x₀≢x₁) x₁∉x₂s x₀∉x₂s)
 
-moveNthFromEndLeft : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-moveNthFromEndLeft _ ∅ = ∅
-moveNthFromEndLeft _ (∷ {x₀} ∉∅) = ∷ {x₀ = x₀} ∉∅
-moveNthFromEndLeft n xs = rotateRightBy (length xs - 2 - n) (transposeFirst (rotateRightBy (2 + n) xs))
+reseal-ex : 𝕃→𝑳 (reseal [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
+reseal-ex = refl
 
-moveEndLeftBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-moveEndLeftBy _ ∅ = ∅
-moveEndLeftBy _ (∷ {x₀} ∉∅) = ∷ {x₀ = x₀} ∉∅
-moveEndLeftBy 0 xs = xs
-moveEndLeftBy (suc n) xs = moveNthFromEndLeft n (moveEndLeftBy n xs)
+-- rotateBy 2 "0123456789" = "8901234567"
+-- rotateBy 3 s = rotate (rotate (rotate s))
+rotateBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+rotateBy 0 x = x
+rotateBy (suc n) x = rotateBy n (rotate x)
 
-moveNthFromBeginningLeftBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-moveNthFromBeginningLeftBy _ 0 xs = xs
-moveNthFromBeginningLeftBy n m xs with length xs
+rotateBy-ex : 𝕃→𝑳 (rotateBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
+rotateBy-ex = refl
+
+-- resealTa 3 "0123456789" = "0123465789"
+-- i.e. take the 3rd (indexed-from-the-right) item (6) and move it one space to the left
+-- resealTa (lastIndex s - 1) s = reseal s
+resealTa : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+resealTa _ ∅ = ∅
+resealTa _ (✓ {x₀} ∉∅) = ✓ {x₀ = x₀} ∉∅
+resealTa n xs = rotateBy (length xs - 2 - n) (reseal (rotateBy (2 + n) xs))
+
+resealTa-ex : 𝕃→𝑳 (resealTa 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
+resealTa-ex = refl
+
+-- resealTaBy 2 "0123456789" = "0123456978"
+-- i.e. take the last item (9) and move it 2 spaces to the left
+resealTaBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+resealTaBy _ ∅ = ∅
+resealTaBy _ (✓ {x₀} ∉∅) = ✓ {x₀ = x₀} ∉∅
+resealTaBy 0 xs = xs
+resealTaBy (suc n) xs = resealTa n (resealTaBy n xs)
+
+resealTaBy-ex : 𝕃→𝑳 (resealTaBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
+resealTaBy-ex = refl
+
+-- resealAtBy 6 2 "0123456789" = "0123456789"
+-- i.e. take the 6th (indexed-from-the-left) item (6) and move it 2 places to the left
+-- resealAtBy 1 1 = reseal
+resealAtBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+resealAtBy _ 0 xs = xs
+resealAtBy n m xs with length xs
 ... | l with suc n ≟ l
-... | yes _ =                       (moveEndLeftBy m (                            xs))
-... | no _  = rotateRightBy (suc n) (moveEndLeftBy m (rotateRightBy (l - (suc n)) xs))
+... | yes _ =                   resealTaBy m (                       xs)
+... | no _  = rotateBy (suc n) (resealTaBy m (rotateBy (l - (suc n)) xs))
+
+resealAtBy-ex : 𝕃→𝑳 (resealAtBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
+resealAtBy-ex = refl
 
 reorder : ∀ {𝑨} {𝐴 : Set 𝑨} (L : 𝕃 𝐴) → 𝑳 ℕ → 𝕃 𝐴
 reorder xs perm = go 0 perm xs where
   go : ∀ {𝑨} {𝐴 : Set 𝑨} → (n : ℕ) → 𝑳 ℕ → (L : 𝕃 𝐴) → 𝕃 𝐴
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
-  go n (p₀ ∷ₗ ps) xs = go (suc n) ps (moveNthFromBeginningLeftBy (n + p₀) p₀ xs)
+  go n (p₀ ∷ₗ ps) xs = go (suc n) ps (resealAtBy (n + p₀) p₀ xs)
 
---test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [abcd]
---test₀ = refl
+test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [abcd]
+test₀ = refl
 
 --test₁ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [dcab]
 --test₁ = refl
 
-test₂ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 1 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [dcba]
-test₂ = refl
+--test₂ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 1 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [dcba]
+--test₂ = refl
