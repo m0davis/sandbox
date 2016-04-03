@@ -209,5 +209,8 @@ reorder xs perm = go 0 perm xs where
   go _ [] xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (moveNthFromBeginningLeftBy (n + p₀) p₀ xs)
 
-reorder-thm₄ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 0 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcab]
-reorder-thm₄ = refl
+test₁ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 0 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcab]
+test₁ = refl
+
+--test₂ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 1 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcba]
+--test₂ = refl
