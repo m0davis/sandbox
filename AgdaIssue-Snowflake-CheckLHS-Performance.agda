@@ -1,32 +1,33 @@
-open import Agda.Primitive
+open import Prelude.Empty
 
-open import Agda.Builtin.Equality
-open import Prelude
-  renaming ( List to 𝑳
-           ; [] to ∅
-           ; _∷_ to _∷ₗ_
-           ; _==_ to _≟_
+open import Agda.Primitive
+open import Agda.Builtin.Nat
+     using ( zero
+           ; suc
+           ; _-_
+           ; _+_
            )
-  using ( ⊥
-        ; ¬_
-        ; _≡_
-        ; ⊥-elim
-        ; Dec; yes ; no
-        ; refl
-        ; ⊤
-        ; eraseEquality
-        ; eraseNegation
-        )
+  renaming (Nat to ℕ)
+open import Agda.Builtin.Equality
+     using (_≡_; refl)
+open import Agda.Builtin.List
+     using ()
+  renaming (List to 𝑳
+           ;[] to ∅
+           ; _∷_ to _∷ₗ_
+           )
+
+data Dec {a} (P : Set a) : Set a where
+  yes : P → Dec P
+  no  : ¬ P → Dec P
 
 sym : ∀ {a} {A : Set a} {x y : A} → x ≡ y → y ≡ x
 sym refl = refl
 
-open import Agda.Builtin.Nat using (suc; _-_; _+_) renaming (Nat to ℕ)
-
-REL : ∀ {a b} → Set a → Set b → (ℓ : Level) → Set (a ⊔ b ⊔ Prelude.lsuc ℓ)
+REL : ∀ {a b} → Set a → Set b → (ℓ : Level) → Set (a ⊔ b ⊔ lsuc ℓ)
 REL A B ℓ = A → B → Set ℓ
 
-Rel : ∀ {a} → Set a → (ℓ : Level) → Set (a ⊔ Prelude.lsuc ℓ)
+Rel : ∀ {a} → Set a → (ℓ : Level) → Set (a ⊔ lsuc ℓ)
 Rel A ℓ = REL A A ℓ
 
 _Respects_ : ∀ {a ℓ₁ ℓ₂} {A : Set a} → (A → Set ℓ₁) → Rel A ℓ₂ → Set _
@@ -37,6 +38,17 @@ Substitutive {A = A} _∼_ p = (P : A → Set p) → P Respects _∼_
 
 subst : ∀ {a p} {A : Set a} → Substitutive (_≡_ {A = A}) p
 subst P refl p = p
+
+sucsuc≡ : ∀ {a b : ℕ} → suc a ≡ suc b → a ≡ b
+sucsuc≡ refl = refl
+
+_≟_ : (a : ℕ) → (b : ℕ) → Dec (a ≡ b)
+zero ≟ zero = yes refl
+zero ≟ suc b = no (λ ())
+suc a ≟ zero = no (λ ())
+suc a ≟ suc b with a ≟ b
+… | yes eq rewrite eq = yes refl
+… | no neq = no (λ x → ⊥-elim (neq (sucsuc≡ x)))
 
 _≢_ : ∀ {a} {A : Set a} → A → A → Set a
 A ≢ B = ¬ A ≡ B
@@ -156,13 +168,13 @@ mutual
 shiftRight : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} (∅⊂xs : ∅⊂ xs) → last ∅⊂xs ∉ init ∅⊂xs
 shiftRight (∅⊂∷ ∉∅) = ∉∅
 shiftRight (∅⊂∷ {x₀} (∉∷ {x₁} x₀≢x₁ {x₂s} x₀∉x₂s x₁∉x₂s)) =
-  let xₙ≢x₀ = (let x₁s[last]=lastx₁s = last-thm₁ (∅⊂∷ x₁∉x₂s) in
-                   λ lastx₁s≡x₀ →
-                       let x₀≡lastx₁s = sym lastx₁s≡x₀
-                       in let x₁s[last]=x₀ = subst (∷ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]=_) lastx₁s≡x₀ x₁s[last]=lastx₁s
-                       in []=-thm₀ x₁s[last]=x₀ (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s))
+  let xₙ≢x₀ = let x₁s[last]=lastx₁s = last-thm₁ (∅⊂∷ x₁∉x₂s) in
+                  λ lastx₁s≡x₀ →
+                      let x₁s[last]=x₀ : ∷ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]= x₀
+                          x₁s[last]=x₀ = subst (∷ x₁∉x₂s [ lastIndex (∅⊂∷ x₁∉x₂s) ]=_) lastx₁s≡x₀ x₁s[last]=lastx₁s
+                      in []=-thm₀ x₁s[last]=x₀ (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s)
   in
-    ∉∷ (eraseNegation xₙ≢x₀)
+    ∉∷ xₙ≢x₀
        (shiftRight (∅⊂∷ x₁∉x₂s))
        (init∉ (∅⊂∷ x₁∉x₂s) (∉∷ x₀≢x₁ x₀∉x₂s x₁∉x₂s))
 
@@ -198,22 +210,18 @@ moveNthFromBeginningLeftBy n m xs with length xs
 ... | yes _ =                       (moveEndLeftBy m (                            xs))
 ... | no _  = rotateRightBy (suc n) (moveEndLeftBy m (rotateRightBy (l - (suc n)) xs))
 
-open import Agda.Builtin.List
-  using (List; [])
-  renaming (_∷_ to _∷ₗ_)
-
-reorder : ∀ {𝑨} {𝐴 : Set 𝑨} (L : 𝕃 𝐴) → List ℕ → 𝕃 𝐴
+reorder : ∀ {𝑨} {𝐴 : Set 𝑨} (L : 𝕃 𝐴) → 𝑳 ℕ → 𝕃 𝐴
 reorder xs perm = go 0 perm xs where
-  go : ∀ {𝑨} {𝐴 : Set 𝑨} → (n : ℕ) → List ℕ → (L : 𝕃 𝐴) → 𝕃 𝐴
+  go : ∀ {𝑨} {𝐴 : Set 𝑨} → (n : ℕ) → 𝑳 ℕ → (L : 𝕃 𝐴) → 𝕃 𝐴
   go _ _ ∅ = ∅
-  go _ [] xs = xs
+  go _ ∅ xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (moveNthFromBeginningLeftBy (n + p₀) p₀ xs)
 
-test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [abcd]
-test₀ = refl
+--test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [abcd]
+--test₀ = refl
 
---test₁ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 0 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcab]
---test₁ = refl
+test₁ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 0 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcab]
+test₁ = refl
 
 --test₂ : 𝕃→𝑳 (reorder [abcd] (3 ∷ₗ 2 ∷ₗ 1 ∷ₗ 0 ∷ₗ [])) ≡ 𝕃→𝑳 [dcba]
 --test₂ = refl
