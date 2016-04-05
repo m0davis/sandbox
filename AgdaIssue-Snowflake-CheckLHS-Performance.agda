@@ -26,16 +26,16 @@ infixl 9 ∘-syntax
 syntax ∘-syntax f g = g ⋙ f
 
 open import Agda.Primitive
-open import Agda.Builtin.Nat
+open import Agda.Builtin.Nat public
      using ( zero
            ; suc
            ; _-_
            ; _+_
            )
   renaming (Nat to ℕ)
-open import Agda.Builtin.Equality
+open import Agda.Builtin.Equality public
      using (_≡_; refl)
-open import Agda.Builtin.List
+open import Agda.Builtin.List public
      using ()
   renaming (List to 𝑳
            ;[] to ∅
