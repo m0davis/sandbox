@@ -1,47 +1,10 @@
+{-# OPTIONS --show-implicit #-}
 module RerightDoneRight where
-
-  module UniqueList₁ where
-    open import Prelude
-
-    data UniqueSnoc {α} (A : Set α) : Set α
-    data _∉_ {α} {A : Set α} (x : A) : (xs : UniqueSnoc A) → Set α
-
-    data UniqueSnoc {α} (A : Set α) where
-      [] : UniqueSnoc A
-      _∷_ : {x : A} → (xs : UniqueSnoc A) → (x∉xs : x ∉ xs) → UniqueSnoc A
-
-    data _∉_ {α} {A : Set α} (x : A) where
-      xs-is-empty : x ∉ []
-      not-in-xs : {head : A} {tail : UniqueSnoc A} → (head∉tail : head ∉ tail) → ¬ x ≡ head → x ∉ (tail ∷ head∉tail)
-
-  module MVec! where
-    open import Prelude hiding (Vec; Fin; _++_)
-    open import Function
-    open import Relation.Binary.PropositionalEquality
-
-    data Vec! {a} (A : Set a) : Nat → Set a
-    data _∉_ {a} {A : Set a} (x : A) : {n : Nat} → Vec! A n → Set a
-
-    data Vec! {a} (A : Set a) where
-      [] : Vec! A zero
-      _∷ʳ_ : ∀ {n} {x : A} (xs : Vec! A n) (x∉xs : x ∉ xs) → Vec! A (suc n)
-
-    pattern _∷ᵛ_ a b = b ∷ʳ a
-
-    data _∉_ {a} {A : Set a} (x : A) where
-      []  : x ∉ []
-      _∷_ : ∀ {head : A} {n} {tail : Vec! A n} → ¬ x ≡ head → (head∉tail : head ∉ tail) → x ∉ (head∉tail ∷ᵛ tail)
-
-    _++!_ : ∀ {a} {A : Set a} {m n} → {M : Vec! A m} → (N : Vec! A n) → (∀ {x} → ¬ x ∉ M → x ∉ N) → Vec! A (m + n)
-    _++!_ {M = []} N M⊈N = N
-    _++!_ {M = M ∷ʳ x∉xs} N M⊈N = {!!}
-
   module Reflection/Verified (Label : Set) where
     open import Agda.Builtin.Reflection hiding (Term; Type; Sort; Clause; Pattern)
     open import Prelude hiding (Vec; Fin; _++_)
-    open import Data.Vec
+--    open import Data.Vec
     open import Data.Fin
-    open MVec!
 
     data Pattern : Set where
       con    : (c : Name) (ps : List (Arg Pattern)) → Pattern
@@ -51,34 +14,93 @@ module RerightDoneRight where
       proj   : (f : Name)    → Pattern
       absurd : Pattern
 
-    Context : Nat → Set
-    Context = Vec! Label
+    module ContextAsVec where
+      open import SnowflakeCev
+      Context : Nat → Set
+      Context = 𝕍 Label
 
-    data Sort {∣Γ∣} (Γ : Context ∣Γ∣) : Set
-    data Clause {∣Γ∣} (Γ : Context ∣Γ∣) : Set
-    data Term {∣Γ∣} (Γ : Context ∣Γ∣) : Set
-    Type = Term
+      data Sort {∣Γ∣} (Γ : Context ∣Γ∣) : Set
+      data Clause {∣Γ∣} (Γ : Context ∣Γ∣) : Set
+      data Term {∣Γ∣} (Γ : Context ∣Γ∣) : Set
+      Type = Term
 
-    data Term {∣Γ∣} (Γ : Context ∣Γ∣) where
-      var           : {ℓ : Label} {x : Fin ∣Γ∣} → ¬ ℓ ∉ Γ → (args : List (Arg (Term Γ))) → Term Γ
-      con           : (c : Name) (args : List (Arg (Term Γ))) → Term Γ
-      def           : (f : Name) (args : List (Arg (Term Γ))) → Term Γ
-      lam           : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (v : Visibility) (t : Abs (Term (l∉Γ ∷ᵛ Γ))) → Term Γ
-      pat-lam       : (cs : List (Clause Γ)) → Term Γ
-      pi            : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (a : Arg (Type Γ)) (b : Abs (Type (l∉Γ ∷ᵛ Γ))) → Term Γ
-      agda-sort     : (s : Sort Γ) → Term Γ
-      lit           : (l : Literal) → Term Γ
-      meta          : (x : Meta) (args : List (Arg (Term Γ))) → Term Γ
-      unknown       : Term Γ
+      data Term {∣Γ∣} (Γ : Context ∣Γ∣) where
+        var           : {ℓ : Label} → ℓ ∈ Γ → (args : List (Arg (Term Γ))) → Term Γ
+        con           : (c : Name) (args : List (Arg (Term Γ))) → Term Γ
+        def           : (f : Name) (args : List (Arg (Term Γ))) → Term Γ
+        lam           : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (v : Visibility) (t : Abs (Term (φ l∉Γ))) → Term Γ
+        pat-lam       : (cs : List (Clause Γ)) → Term Γ
+        pi            : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (a : Arg (Type Γ)) (b : Abs (Type (φ l∉Γ))) → Term Γ
+        agda-sort     : (s : Sort Γ) → Term Γ
+        lit           : (l : Literal) → Term Γ
+        meta          : (x : Meta) (args : List (Arg (Term Γ))) → Term Γ
+        unknown       : Term Γ
 
-    data Sort {∣Γ∣} (Γ : Context ∣Γ∣) where
-      set     : (t : Term Γ) → Sort Γ
-      lit     : (n : Nat) → Sort Γ
-      unknown : Sort Γ
+      data Sort {∣Γ∣} (Γ : Context ∣Γ∣) where
+        set     : (t : Term Γ) → Sort Γ
+        lit     : (n : Nat) → Sort Γ
+        unknown : Sort Γ
 
-    data Clause {∣Γ∣} (Γ : Context ∣Γ∣) where
-      clause        : (ps : List (Arg Pattern)) → ∀ {∣Γₚₛ∣} → {Γₚₛ : Context ∣Γₚₛ∣} → (Γₚₛ! : ∀ {ℓ} → ¬ ℓ ∉ Γₚₛ → ℓ ∉ Γ) → (t : Term (Γ ++! Γₚₛ!)) → Clause Γ
-      absurd-clause : (ps : List (Arg Pattern)) → Clause Γ
+      data Clause {∣Γ∣} (Γ : Context ∣Γ∣) where
+        clause        : (ps : List (Arg Pattern)) → ∀ {∣Γₚₛ∣} → {Γₚₛ : Context ∣Γₚₛ∣} → (Γₚₛ∩Γ≡∅ : ⌜ Γₚₛ ∩ Γ ≡∅⌝) → (t : Term (∪ Γₚₛ∩Γ≡∅)) → Clause Γ
+        absurd-clause : (ps : List (Arg Pattern)) → Clause Γ
+
+    module ContextAsList where
+      open import SnowflakeSnoc
+      Context : Set
+      Context = 𝕃 Label
+
+      data Sort (Γ : Context) : Set
+      data Clause (Γ : Context) : Set
+      data Term (Γ : Context) : Set
+      Type = Term
+
+      data Term (Γ : Context) where
+        var           : {ℓ : Label} → ℓ ∈ Γ → (args : List (Arg (Term Γ))) → Term Γ
+        con           : (c : Name) (args : List (Arg (Term Γ))) → Term Γ
+        def           : (f : Name) (args : List (Arg (Term Γ))) → Term Γ
+        lam           : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (v : Visibility) (t : Abs (Term (φ l∉Γ))) → Term Γ
+        pat-lam       : (cs : List (Clause Γ)) → Term Γ
+        pi            : {ℓ : Label} → (l∉Γ : ℓ ∉ Γ) → (a : Arg (Type Γ)) (b : Abs (Type (φ l∉Γ))) → Term Γ
+        agda-sort     : (s : Sort Γ) → Term Γ
+        lit           : (l : Literal) → Term Γ
+        meta          : (x : Meta) (args : List (Arg (Term Γ))) → Term Γ
+        unknown       : Term Γ
+
+      data Sort (Γ : Context) where
+        set     : (t : Term Γ) → Sort Γ
+        lit     : (n : Nat) → Sort Γ
+        unknown : Sort Γ
+
+      data Clause (Γ : Context) where
+        clause        : (ps : List (Arg Pattern)) → ∀ {Γₚₛ : Context} → (Γₚₛ∩Γ≡∅ : ⌜ Γₚₛ ∩ Γ ≡∅⌝) → (t : Term (∪ Γₚₛ∩Γ≡∅)) → Clause Γ
+        absurd-clause : (ps : List (Arg Pattern)) → Clause Γ
+
+    module Convert where
+      open import SnowflakeCev
+      open import SnowflakeSnoc
+      open ContextAsList
+           using ()
+        renaming (Term to TL
+                 ;Context to CL)
+
+      open ContextAsVec
+           using ()
+        renaming (Term to TV
+                 ;Context to CV)
+
+      mutual
+        toList : ∀ {𝑨} {𝐴 : Set 𝑨} {n} → 𝕍 𝐴 n →  𝕃 𝐴
+        toList ε = ε
+        toList (φ {x₀ = x₀} ε) = φ {x₀ = x₀} ε
+        toList (φ (φ {x₀ = x₀} {x₁s = x₁s} {x₀∉x₁s} x₁≢x₀ x₀∉x₁s₁)) = φ (φ {x₁s = toList x₁s} {x₀∉x₁s = toList∉ x₀∉x₁s (toList x₁s) refl} x₁≢x₀ (toList∉ x₀∉x₁s₁ (toList x₁s) refl))
+
+        toList∉ : ∀ {n 𝑨} {𝐴 : Set 𝑨} {𝔞 : 𝐴} {x₀s : 𝕍 𝐴 n} → 𝔞 SnowflakeCev.∉ x₀s → (w : 𝕃 𝐴) → w ≡ toList x₀s → 𝔞 SnowflakeSnoc.∉ w
+        toList∉ = ?
+
+      foo : ∀ {∣Γ∣} {Γ : CV ∣Γ∣} → TV Γ → TL (toList Γ)
+      foo = {!!}
+
 
   module Reflection/Label (Label : Set) where
     open import Agda.Builtin.Reflection hiding (Term; Type; Sort; Clause; Pattern)
