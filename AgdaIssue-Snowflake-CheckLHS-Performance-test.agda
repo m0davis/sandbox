@@ -1,15 +1,6 @@
-open import AgdaIssue-Snowflake-CheckLHS-Performance
+module AgdaIssue-Snowflake-CheckLHS-Performance-test where
 
-open import Prelude using (id {-syntax ofType-})
-[a]    = ✓ a∅    ofType 𝕃 T
-[ab]   = ✓ a∉b   ofType 𝕃 T
-[ba]   = ✓ b∉a   ofType 𝕃 T
-[abc]  = ✓ a∉bc  ofType 𝕃 T
-[cab]  = ✓ c∉ab  ofType 𝕃 T
-[cba]  = ✓ c∉ba  ofType 𝕃 T
-[abcd] = ✓ a∉bcd ofType 𝕃 T
-[dcab] = ✓ d∉cab ofType 𝕃 T
-[dcba] = ✓ d∉cba ofType 𝕃 T
+open import AgdaIssue-Snowflake-CheckLHS-Performance
 
 last : ∀ {𝑨} {𝐴 : Set 𝑨} {L} → ∅⊂ L → 𝐴
 last [ x₀ ] = x₀
@@ -64,7 +55,7 @@ rotateBy 0 x = x
 rotateBy (suc n) x = x |⋙ rotate ⋙ rotateBy n
 
 rotateBy-ex : 𝕃→𝑳 (rotateBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
-rotateBy-ex = refl
+rotateBy-ex = ?
 
 -- resealTa 3 "0123456789" = "0123465789"
 -- i.e. take the 3rd (indexed-from-the-right) item (6) and move it one space to the left
