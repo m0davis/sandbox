@@ -1,7 +1,7 @@
 module AgdaIssue1909 where
   open import Prelude
   open import Tactic.Reflection
-  
+
   data D : Set where
     d : D
 
@@ -16,10 +16,10 @@ module AgdaIssue1909 where
   macro
     do-unify₀ : Tactic
     do-unify₀ = flip unify term₀
- 
+
     do-unify₁ : Tactic
     do-unify₁ = flip unify term₁
- 
+
   test₀ : D → D
   test₀ d' = case_of_ {lzero} {lzero} {D} {D} d' do-unify₀
 
@@ -35,9 +35,9 @@ module AgdaIssue1909 where
       typeError [ termErr (` cs) ]
 
   foo : Set
-  foo = {!evalT (quoteTC 0)!} -- showDefinition test₀
+  foo = {!showDefinition test₀!}
   {- Results of showDefinition below. Notice that the pat-lam matches that from term₁, not term₀!
-  
+
      clause (arg (arg-info visible relevant) (var "d'") ∷ [])
      (def (quote case_of_)
       (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
