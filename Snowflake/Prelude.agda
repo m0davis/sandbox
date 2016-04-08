@@ -193,12 +193,7 @@ a∉bcd = a∉cd ↶ a≢b ↷ b∉cd
 d∉cab = d∉ab ↶ d≢c ↷ c∉ab
 d∉cba = d∉ba ↶ d≢c ↷ c∉ba
 
-{- NO INSTANCE ERROR
-open import Prelude using (id {-syntax ofType-})
-
-[abcd] : 𝕃 T
-[abcd] = ✓ a∉bcd ofType 𝕃 T
--}
+open import Prelude.Function using (id {-syntax ofType-})
 
 [a]
  [ab]
@@ -316,3 +311,6 @@ reorder xs perm = go 0 perm xs where
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (resealAtBy (n + p₀) p₀ xs)
+
+-- the module application in Prelude.Number requires users of Snowflake.Prelude to provide an instance for FromNat
+import Agda.Builtin.FromNat

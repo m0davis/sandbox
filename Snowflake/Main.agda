@@ -2,9 +2,8 @@ module Snowflake.Main where
 
 open import Snowflake.Prelude
 
-{- NO INSTANCE ERROR
-open import Prelude using (id {-syntax ofType-})
--}
+-- provide an instance as required by the module application in Prelude.Number
+open import Prelude.Nat
 
 test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [abcd]
 test₀ = refl
