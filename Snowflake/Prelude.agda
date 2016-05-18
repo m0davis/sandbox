@@ -311,6 +311,3 @@ reorder xs perm = go 0 perm xs where
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (resealAtBy (n + p₀) p₀ xs)
-
--- the module application in Prelude.Number requires users of Snowflake.Prelude to provide an instance for FromNat
-import Agda.Builtin.FromNat
