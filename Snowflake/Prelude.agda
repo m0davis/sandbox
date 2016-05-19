@@ -251,7 +251,7 @@ rotate∉ (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) =
   in
     rotate∉ (✓ x₁∉x₂s) ↶ xₙ≢x₀ ↷ init∉ (✓ x₁∉x₂s) (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)
 
--- rotate "0123456789" = "9012345678"
+-- rotate "A12345678Z" = "ZA12345678"
 rotate : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
 rotate ∅ = ∅
 rotate [ x₀ ] = [ x₀ ]
@@ -260,7 +260,7 @@ rotate (✓ x₀∉x₁s) = ✓ (rotate∉ (✓ x₀∉x₁s))
 rotate-ex : 𝕃→𝑳 (rotate [abcd]) ≡ (⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
 rotate-ex = refl
 
--- reseal "0123456789" = "1023456789"
+-- reseal "AB23456789" = "BA23456789"
 reseal : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
 reseal ∅ = ∅
 reseal [ x₀ ] = [ x₀ ]
@@ -269,7 +269,7 @@ reseal (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) = ✓ (x₁∉x₂s
 reseal-ex : 𝕃→𝑳 (reseal [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 reseal-ex = refl
 
--- rotateBy 2 "0123456789" = "8901234567"
+-- rotateBy 2 "01234567AB" = "AB01234567"
 -- rotateBy 3 s = rotate (rotate (rotate s))
 rotateBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 rotateBy 0 x = x
@@ -278,8 +278,8 @@ rotateBy (suc n) x = x |⋙ rotate ⋙ rotateBy n
 rotateBy-ex : 𝕃→𝑳 (rotateBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateBy-ex = refl
 
--- resealTa 3 "0123456789" = "0123465789"
--- i.e. take the 3rd (indexed-from-the-right) item (6) and move it one space to the left
+-- resealTa 3 "012345X789" = "01234X5789"
+-- i.e. take the 3rd (indexed-from-the-right) item (X) and move it one space to the left
 -- resealTa (lastIndex s - 1) s = reseal s
 resealTa : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 resealTa _ ∅ = ∅
@@ -289,8 +289,8 @@ resealTa n xs = xs |⋙ rotateBy (2 + n) ⋙ reseal ⋙ rotateBy (length xs - 2 
 resealTa-ex : 𝕃→𝑳 (resealTa 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 resealTa-ex = refl
 
--- resealTaBy 2 "0123456789" = "0123456978"
--- i.e. take the last item (9) and move it 2 spaces to the left
+-- resealTaBy 2 "012345678X" = "0123456X78"
+-- i.e. take the last item (X) and move it 2 spaces to the left
 resealTaBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 resealTaBy _ ∅ = ∅
 resealTaBy _ [ x₀ ] = [ x₀ ]
@@ -300,8 +300,8 @@ resealTaBy (suc n) xs = xs |⋙ resealTaBy n ⋙ resealTa n
 resealTaBy-ex : 𝕃→𝑳 (resealTaBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
 resealTaBy-ex = refl
 
--- resealAtBy 6 2 "0123456789" = "0123456789"
--- i.e. take the 6th (indexed-from-the-left) item (6) and move it 2 places to the left
+-- resealAtBy 6 2 "012345X789" = "0123X45789"
+-- i.e. take the 6th (indexed-from-the-left) item (X) and move it 2 places to the left
 -- resealAtBy 1 1 = reseal
 resealAtBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 resealAtBy _ 0 xs = xs
