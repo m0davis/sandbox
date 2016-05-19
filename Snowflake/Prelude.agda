@@ -1,6 +1,14 @@
 module Snowflake.Prelude where
 
-open import Prelude.Empty
+data ⊥ : Set where
+
+⊥-elim : ∀ {a} {A : Set a} → ⊥ → A
+⊥-elim ()
+{-# INLINE ⊥-elim #-}
+
+infix 3 ¬_
+¬_ : ∀ {a} (A : Set a) → Set a
+¬ A = A → ⊥
 
 infixr 0 _$_
 _$_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
