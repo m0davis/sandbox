@@ -241,81 +241,82 @@ mutual
   init∉ (✓ _) (∅ ↶ _ ↷ ∅) = ∅
   init∉ (✓ _) ((x₀∉x₃s ↶ x₀≢x₂ ↷ x₂∉x₃s) ↶ x₀≢x₁ ↷ (x₁∉x₃s ↶ x₁≢x₂ ↷ .x₂∉x₃s)) = init∉ _ (x₀∉x₃s ↶ x₀≢x₂ ↷ x₂∉x₃s) ↶ x₀≢x₁ ↷ init∉ _ (x₁∉x₃s ↶ x₁≢x₂ ↷ x₂∉x₃s)
 
-rotate∉ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} (∅⊂xs : ∅⊂ xs) → last ∅⊂xs ∉ init ∅⊂xs
-rotate∉ [ _ ] = ∅
-rotate∉ (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) =
+rotateDown∉ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} (∅⊂xs : ∅⊂ xs) → last ∅⊂xs ∉ init ∅⊂xs
+rotateDown∉ [ _ ] = ∅
+rotateDown∉ (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) =
   let xₙ≢x₀ = λ lastx₁s≡x₀ → let x₁s[last]=x₀ : ✓ x₁∉x₂s [ lastIndex (✓ x₁∉x₂s) ]= _
                                  x₁s[last]=x₀ = subst (✓ x₁∉x₂s [ lastIndex (✓ x₁∉x₂s) ]=_) lastx₁s≡x₀ (✓ x₁∉x₂s [lastIndex]=last)
                              in
                                ⊥-𝕃[i]=x∉𝕃 x₁s[last]=x₀ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)
   in
-    rotate∉ (✓ x₁∉x₂s) ↶ xₙ≢x₀ ↷ init∉ (✓ x₁∉x₂s) (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)
+    rotateDown∉ (✓ x₁∉x₂s) ↶ xₙ≢x₀ ↷ init∉ (✓ x₁∉x₂s) (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)
 
--- rotate "A12345678Z" = "ZA12345678"
-rotate : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
-rotate ∅ = ∅
-rotate [ x₀ ] = [ x₀ ]
-rotate (✓ x₀∉x₁s) = ✓ (rotate∉ (✓ x₀∉x₁s))
+-- rotateDown "A12345678Z" = "ZA12345678"
+rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
+rotateDown ∅ = ∅
+rotateDown [ x₀ ] = [ x₀ ]
+rotateDown (✓ x₀∉x₁s) = ✓ (rotateDown∉ (✓ x₀∉x₁s))
 
-rotate-ex : 𝕃→𝑳 (rotate [abcd]) ≡ (⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
-rotate-ex = refl
+rotateDown-ex : 𝕃→𝑳 (rotateDown [abcd]) ≡ (⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
+rotateDown-ex = refl
 
--- reseal "AB23456789" = "BA23456789"
-reseal : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
-reseal ∅ = ∅
-reseal [ x₀ ] = [ x₀ ]
-reseal (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) = ✓ (x₁∉x₂s ↶ sym≢ x₀≢x₁ ↷ x₀∉x₂s)
+-- swapTop "AB23456789" = "BA23456789"
+swapTop : ∀ {𝑨} {𝐴 : Set 𝑨} → 𝕃 𝐴 → 𝕃 𝐴
+swapTop ∅ = ∅
+swapTop [ x₀ ] = [ x₀ ]
+swapTop (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) = ✓ (x₁∉x₂s ↶ sym≢ x₀≢x₁ ↷ x₀∉x₂s)
 
-reseal-ex : 𝕃→𝑳 (reseal [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
-reseal-ex = refl
+swapTop-ex : 𝕃→𝑳 (swapTop [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
+swapTop-ex = refl
 
--- rotateBy 2 "01234567AB" = "AB01234567"
--- rotateBy 3 s = rotate (rotate (rotate s))
-rotateBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-rotateBy 0 x = x
-rotateBy (suc n) x = x |⋙ rotate ⋙ rotateBy n
+-- rotateDownBy 2 "01234567AB" = "AB01234567"
+-- rotateDownBy 3 s = rotateDown (rotateDown (rotateDown s))
+rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+rotateDownBy 0 x = x
+rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
 
-rotateBy-ex : 𝕃→𝑳 (rotateBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
-rotateBy-ex = refl
+rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
+rotateDownBy-ex = refl
 
--- resealTa 3 "012345X789" = "01234X5789"
+-- raiseFromBottom 3 "012345X789" = "01234X5789"
 -- i.e. take the 3rd (indexed-from-the-right) item (X) and move it one space to the left
--- resealTa (lastIndex s - 1) s = reseal s
-resealTa : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-resealTa _ ∅ = ∅
-resealTa _ [ x₀ ] = [ x₀ ]
-resealTa n xs = xs |⋙ rotateBy (2 + n) ⋙ reseal ⋙ rotateBy (length xs - 2 - n)
+-- raiseFromBottom (lastIndex s - 1) s = swapTop s
+raiseFromBottom : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+raiseFromBottom _ ∅ = ∅
+raiseFromBottom _ [ x₀ ] = [ x₀ ]
+raiseFromBottom n xs = xs |⋙ rotateDownBy (2 + n) ⋙ swapTop ⋙ rotateDownBy (length xs - 2 - n)
 
-resealTa-ex : 𝕃→𝑳 (resealTa 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
-resealTa-ex = refl
+raiseFromBottom-ex : 𝕃→𝑳 (raiseFromBottom 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
+raiseFromBottom-ex = refl
 
--- resealTaBy 2 "012345678X" = "0123456X78"
+-- raiseBottomBy 2 "012345678X" = "0123456X78"
 -- i.e. take the last item (X) and move it 2 spaces to the left
-resealTaBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-resealTaBy _ ∅ = ∅
-resealTaBy _ [ x₀ ] = [ x₀ ]
-resealTaBy 0 xs = xs
-resealTaBy (suc n) xs = xs |⋙ resealTaBy n ⋙ resealTa n
+raiseBottomBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+raiseBottomBy _ ∅ = ∅
+raiseBottomBy _ [ x₀ ] = [ x₀ ]
+raiseBottomBy 0 xs = xs
+raiseBottomBy (suc n) xs = xs |⋙ raiseBottomBy n ⋙ raiseFromBottom n
 
-resealTaBy-ex : 𝕃→𝑳 (resealTaBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
-resealTaBy-ex = refl
+raiseBottomBy-ex : 𝕃→𝑳 (raiseBottomBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
+raiseBottomBy-ex = refl
 
--- resealAtBy 6 2 "012345X789" = "0123X45789"
+-- ⟦ 2 ⋆← 6 ⟧ "012345X789"
+-- raiseFromTopBy 6 2 "012345X789" = "0123X45789"
 -- i.e. take the 6th (indexed-from-the-left) item (X) and move it 2 places to the left
--- resealAtBy 1 1 = reseal
-resealAtBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 𝕃 𝐴
-resealAtBy _ 0 xs = xs
-resealAtBy n m xs with length xs
+-- raiseFromTopBy 1 1 = swapTop
+raiseFromTopBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+raiseFromTopBy _ 0 xs = xs
+raiseFromTopBy n m xs with length xs
 ... | l with suc n ≟ l
-... | yes _ = xs |⋙ resealTaBy m
-... | no _  = xs |⋙ rotateBy (l - (suc n)) ⋙ resealTaBy m ⋙ rotateBy (suc n)
+... | yes _ = xs |⋙ raiseBottomBy m
+... | no _  = xs |⋙ rotateDownBy (l - (suc n)) ⋙ raiseBottomBy m ⋙ rotateDownBy (suc n)
 
-resealAtBy-ex : 𝕃→𝑳 (resealAtBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
-resealAtBy-ex = refl
+raiseFromTopBy-ex : 𝕃→𝑳 (raiseFromTopBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
+raiseFromTopBy-ex = refl
 
 reorder : ∀ {𝑨} {𝐴 : Set 𝑨} (L : 𝕃 𝐴) → 𝑳 ℕ → 𝕃 𝐴
 reorder xs perm = go 0 perm xs where
   go : ∀ {𝑨} {𝐴 : Set 𝑨} → (n : ℕ) → 𝑳 ℕ → (L : 𝕃 𝐴) → 𝕃 𝐴
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
-  go n (p₀ ∷ₗ ps) xs = go (suc n) ps (resealAtBy (n + p₀) p₀ xs)
+  go n (p₀ ∷ₗ ps) xs = go (suc n) ps (raiseFromTopBy (n + p₀) p₀ xs)
