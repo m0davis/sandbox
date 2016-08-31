@@ -273,7 +273,8 @@ swapTop-ex = refl
 -- rotateDownBy 3 s = rotateDown (rotateDown (rotateDown s))
 rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 rotateDownBy 0 x = x
-rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
+--rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
+rotateDownBy (suc n) x = rotateDownBy n (rotateDown x)
 
 rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateDownBy-ex = refl
@@ -284,7 +285,8 @@ rotateDownBy-ex = refl
 raiseFromBottom : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 raiseFromBottom _ ∅ = ∅
 raiseFromBottom _ [ x₀ ] = [ x₀ ]
-raiseFromBottom n xs = xs |⋙ rotateDownBy (2 + n) ⋙ swapTop ⋙ rotateDownBy (length xs - 2 - n)
+--raiseFromBottom n xs = xs |⋙ rotateDownBy (2 + n) ⋙ swapTop ⋙ rotateDownBy (length xs - 2 - n)
+raiseFromBottom n xs = rotateDownBy (length xs - 2 - n) (swapTop (rotateDownBy (2 + n) xs))
 
 raiseFromBottom-ex : 𝕃→𝑳 (raiseFromBottom 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromBottom-ex = refl
@@ -295,7 +297,8 @@ raiseBottomBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 raiseBottomBy _ ∅ = ∅
 raiseBottomBy _ [ x₀ ] = [ x₀ ]
 raiseBottomBy 0 xs = xs
-raiseBottomBy (suc n) xs = xs |⋙ raiseBottomBy n ⋙ raiseFromBottom n
+raiseBottomBy (suc n) xs = raiseFromBottom n (raiseBottomBy n xs)
+--raiseBottomBy (suc n) xs = xs |⋙ raiseBottomBy n ⋙ raiseFromBottom n
 
 raiseBottomBy-ex : 𝕃→𝑳 (raiseBottomBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
 raiseBottomBy-ex = refl
@@ -308,8 +311,10 @@ raiseFromTopBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 
 raiseFromTopBy _ 0 xs = xs
 raiseFromTopBy n m xs with length xs
 ... | l with suc n ≟ l
-... | yes _ = xs |⋙ raiseBottomBy m
-... | no _  = xs |⋙ rotateDownBy (l - (suc n)) ⋙ raiseBottomBy m ⋙ rotateDownBy (suc n)
+... | yes _ = raiseBottomBy m xs
+--... | yes _ = xs |⋙ raiseBottomBy m
+... | no _  = rotateDownBy (suc n) (raiseBottomBy m (rotateDownBy (l - (suc n)) xs))
+--... | no _  = xs |⋙ rotateDownBy (l - (suc n)) ⋙ raiseBottomBy m ⋙ rotateDownBy (suc n)
 
 raiseFromTopBy-ex : 𝕃→𝑳 (raiseFromTopBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromTopBy-ex = refl
