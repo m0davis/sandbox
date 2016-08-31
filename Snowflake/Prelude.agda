@@ -271,9 +271,17 @@ swapTop-ex = refl
 
 -- rotateDownBy 2 "01234567AB" = "AB01234567"
 -- rotateDownBy 3 s = rotateDown (rotateDown (rotateDown s))
+open import Agda.Builtin.Nat using (_<_)
+open import Agda.Builtin.Bool
+
+{-# TERMINATING #-}
 rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+rotateDownBy n ∅ = ∅
 rotateDownBy 0 x = x
-rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
+rotateDownBy (suc n) x with length x < suc (suc n)
+... | true = rotateDownBy (suc n - length x) x
+... | false = x |⋙ rotateDown ⋙ rotateDownBy n
+--rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
 
 rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateDownBy-ex = refl
