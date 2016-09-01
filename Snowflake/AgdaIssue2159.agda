@@ -1,4 +1,4 @@
-module Snowflake.Simple where
+module Snowflake.AgdaIssue2159 where
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Nat
