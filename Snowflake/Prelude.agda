@@ -274,7 +274,8 @@ swapTop-ex = refl
 rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 rotateDownBy 0 x = x
 --rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
-rotateDownBy (suc n) x = rotateDownBy n (rotateDown x)
+--rotateDownBy (suc n) x = rotateDownBy n (rotateDown x)
+rotateDownBy (suc n) x = rotateDown (rotateDownBy n x)
 
 rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateDownBy-ex = refl

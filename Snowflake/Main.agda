@@ -34,9 +34,9 @@ open import Snowflake.Prelude
 -- test₁-raw₅-simpler : 𝕃→𝑳 (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (swapTop (rotateDown (rotateDown (swapTop (rotateDown (swapTop (rotateDown (swapTop (rotateDown (rotateDown [abcd])))))))))))))))))) ≡ 𝕃→𝑳 [dcba]
 -- test₁-raw₅-simpler = refl
 
--- memory hog
-test-rotateDown₂₄ : 𝕃→𝑳 (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown [abcd])))))))))))))))))))))))) ≡ 𝕃→𝑳 [abcd]
-test-rotateDown₂₄ = {!refl!}
+-- -- memory hog
+-- test-rotateDown₂₄ : 𝕃→𝑳 (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown [abcd])))))))))))))))))))))))) ≡ 𝕃→𝑳 [abcd]
+-- test-rotateDown₂₄ = {!refl!}
 
 -- -- memory conservative
 -- test-rotateDown₂₀ : 𝕃→𝑳 (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown [abcd])))))))))))))))))))) ≡ 𝕃→𝑳 [abcd]
@@ -45,9 +45,10 @@ test-rotateDown₂₄ = {!refl!}
 -- test₂-6-5 : (rotateDown ∘ rotateDown ∘ rotateDown ∘ swapTop ∘ rotateDown $ [abcd]) ≡ [dcba]
 -- test₂-6-5 = {!refl!} -- C-u C-u C-c C-.  : TODO this is getting very big
 
--- -- TODO takes a long time to typecheck
+-- -- TODO the type takes a long time to typecheck...
 -- {-
 -- test₂-7-5 : 𝕃→𝑳 (rotateDown ∘ rotateDown ∘ rotateDown ∘ rotateDown ∘
+--                  rotateDown ∘ rotateDown ∘ rotateDown ∘ rotateDown ∘
 --                  rotateDown ∘ rotateDown ∘ rotateDown ∘ rotateDown ∘
 --                  rotateDown ∘ rotateDown ∘ rotateDown ∘ rotateDown ∘
 --                  rotateDown ∘ rotateDown ∘ rotateDown ∘ rotateDown ∘
@@ -56,11 +57,20 @@ test-rotateDown₂₄ = {!refl!}
 -- test₂-7-5 = {!refl!}
 -- -}
 
--- -- but this is fast to typecheck
+-- -- ...but here, only the term is slow to typecheck
 -- test₂-7-5' : 𝕃→𝑳 (rotateDown ( rotateDown ( rotateDown ( rotateDown (
 --                   rotateDown ( rotateDown ( rotateDown ( rotateDown (
 --                   rotateDown ( rotateDown ( rotateDown ( rotateDown (
 --                   rotateDown ( rotateDown ( rotateDown ( rotateDown (
 --                   rotateDown ( rotateDown ( rotateDown ( rotateDown (
---                   [abcd]))))))))))))))))))))) ≡ 𝕃→𝑳 [abcd]
--- test₂-7-5' = {!refl!} -- C-u C-u C-c C-.  : TODO this is getting very big
+--                   rotateDown ( rotateDown ( rotateDown ( rotateDown (
+--                   [abcd]))))))))))))))))))))))))) ≡ 𝕃→𝑳 [abcd]
+-- test₂-7-5' = refl -- C-u C-u C-c C-.  : TODO this is getting very big
+
+
+-- test₃ : 𝕃→𝑳 (rotateDownBy 48 [abc]) ≡ 𝕃→𝑳 [abc]
+-- test₃ = refl
+
+-- -- time hogging, not memory hogging
+-- test₄ : 𝕃→𝑳 (rotateDownBy 48 [ab]) ≡ 𝕃→𝑳 [ab]
+-- test₄ = refl
