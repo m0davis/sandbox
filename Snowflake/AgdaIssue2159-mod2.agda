@@ -262,5 +262,22 @@ swapTop-ex = refl
 
 -- memory hog
 -- admittedly, the number of 'rotateDown's is unnecessarily large; eliminating any 4 consecutive 'rotateDown's makes this typecheck quickly
-test : 𝕃→𝑳 (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown [abcd])))))))))))))))))))))))))))))) ≡ 𝕃→𝑳 [dcba]
-test = refl
+test₁ : 𝕃→𝑳 (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown [abcd])))))))))))))))))))))))))))))) ≡ 𝕃→𝑳 [dcba]
+test₁ = {!refl!}
+
+open import Agda.Builtin.Strict
+
+infixr 0 _$!_
+_$!_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
+f $! x = primForce x f
+
+-- still a memory hog, but why?
+test₂ : (𝕃→𝑳 $!
+         rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
+         rotateDown $! rotateDown $! [abcd]) ≡ (𝕃→𝑳 $! [dcba])
+test₂ = {!refl!}
