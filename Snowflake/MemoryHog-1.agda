@@ -3,6 +3,12 @@ module Snowflake.MemoryHog-1 where
 -- 𝕃 is a list of unique elements (each element distinct from every other)
 -- 𝑳 is a regular List
 
+open import Agda.Builtin.Strict
+
+infixr 0 _$!_
+_$!_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
+f $! x = primForce x f
+
 data ⊥ : Set where
 
 ⊥-elim : ∀ {a} {A : Set a} → ⊥ → A
@@ -260,24 +266,68 @@ swapTop (✓ (x₀∉x₂s ↶ x₀≢x₁ ↷ x₁∉x₂s)) = ✓ (x₁∉x₂
 swapTop-ex : 𝕃→𝑳 (swapTop [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 swapTop-ex = refl
 
+swapTopBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+swapTopBy 0 x = x
+swapTopBy (suc n) x = swapTop (swapTopBy n x)
+
+swapTopBy! : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
+swapTopBy! 0 x = x
+swapTopBy! (suc n) x = swapTopBy! n $! swapTop x
+
 -- memory hog
 -- admittedly, the number of 'rotateDown's is unnecessarily large; eliminating any 4 consecutive 'rotateDown's makes this typecheck quickly
 test₁ : 𝕃→𝑳 (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown (rotateDown (rotateDown (rotateDown (swapTop (rotateDown (rotateDown [abcd])))))))))))))))))))))))))))))) ≡ 𝕃→𝑳 [dcba]
 test₁ = {!refl!}
 
-open import Agda.Builtin.Strict
-
-infixr 0 _$!_
-_$!_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
-f $! x = primForce x f
-
 -- still a memory hog, but why?
 test₂ : (𝕃→𝑳 $!
-         rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! swapTop $!
-         rotateDown $! rotateDown $! [abcd]) ≡ (𝕃→𝑳 $! [dcba])
+         rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! rotateDown $! rotateDown $! rotateDown $! 
+         rotateDown $! rotateDown $! [abcd]) ≡ (𝕃→𝑳 $! [abcd])
 test₂ = {!refl!}
+
+-- no problem with swapTop
+test₃ : (𝕃→𝑳 $!
+         swapTop $! swapTop $! 
+         swapTop $! swapTop $! swapTop $! 
+         swapTop $! swapTop $! swapTop $! swapTop $! swapTop $! 
+         swapTop $! swapTop $! 
+         swapTop $! swapTop $! swapTop $! swapTop $! swapTop $! 
+         swapTop $! swapTop $! swapTop $! swapTop $! swapTop $! 
+         swapTop $! swapTop $! [abcd]) ≡ (𝕃→𝑳 $! [abcd])
+test₃ = refl
+
+-- no problem with swapTop and non-strict
+test₄ : (𝕃→𝑳 $
+         swapTop $ swapTop $ 
+         swapTop $ swapTop $ swapTop $ 
+         swapTop $ swapTop $ swapTop $ swapTop $ swapTop $ 
+         swapTop $ swapTop $ 
+         swapTop $ swapTop $ swapTop $ swapTop $ swapTop $ 
+         swapTop $ swapTop $ swapTop $ swapTop $ swapTop $ 
+         swapTop $ swapTop $ [abcd]) ≡ (𝕃→𝑳 $ [abcd])
+test₄ = refl
+
+-- too many 'swapTop's is a problem
+test₅ : 𝕃→𝑳 (swapTopBy 10000000 [abcd]) ≡ 𝕃→𝑳 [abcd]
+test₅ = {!refl!}
+
+-- even when it's strict
+test₆ : 𝕃→𝑳 (swapTopBy! 10000000 [abcd]) ≡ 𝕃→𝑳 [abcd]
+test₆ = {!refl!}
+
+-- even when we get rid of the conversion
+test₇ : swapTopBy! 10000000 [abcd] ≡ [abcd]
+test₇ = {!refl!}
+
+-- even when we reduce to a small list
+test₈ : swapTopBy! 10000000 [ab] ≡ [ab]
+test₈ = {!refl!}
+
+-- but not when we reduce to a smaller list
+test₉ : swapTopBy! 10000000 [a] ≡ [a]
+test₉ = {!refl!}
