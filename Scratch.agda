@@ -1,7 +1,7 @@
 --{-# OPTIONS --show-implicit #-}
 module Scratch where
 
--- open import Prelude
+open import Prelude
 -- open import Tactic.Reflection
 
 
