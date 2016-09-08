@@ -1,0 +1,3 @@
+name: pat-lam
+include: .
+depend: standard-library agda-prelude
