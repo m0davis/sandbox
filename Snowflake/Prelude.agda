@@ -1,3 +1,4 @@
+--{-# OPTIONS --show-implicit #-}
 module Snowflake.Prelude where
 
 data ⊥ : Set where
@@ -328,3 +329,85 @@ reorder xs perm = go 0 perm xs where
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (raiseFromTopBy (n + p₀) p₀ xs)
+
+module M₁ where
+  data Fin : ℕ → Set where
+    zero : Fin 0
+    suc : ∀ {n} → Fin n → Fin (suc n)
+
+  data PermutationList : ℕ → Set where
+    ∅ : PermutationList 0
+    _∷_ : ∀ {n} → Fin n → PermutationList n → PermutationList (suc n)
+  {-
+  invariantLength-init : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s
+    init : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀s : 𝕃 𝐴} (∅⊂x₀s : ∅⊂ x₀s) → 𝕃 𝐴
+  -}
+
+  invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
+  invariantLength-rotateDown {𝑨} {𝐴} ∅ = {!!}
+  invariantLength-rotateDown {𝑨} {𝐴} (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) = {!!}
+  {-
+  invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
+  invariantLength-rotateDown ∅ = refl
+  invariantLength-rotateDown [ x₀ ] = refl
+  invariantLength-rotateDown (x₀ ₀∷₁ x₁ ∷⟦ x₂s ⟧) = {!!}
+  -}
+
+  {-# TERMINATING #-}
+  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (length xs) → 𝕃 𝐴
+  rotateDownBy' ∅ zero = ∅
+  rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc {n = n} n') = rotateDownBy' (rotateDown (✓ x₀∉x₁s)) (subst Fin (sym {!!}) n') -- (subst Fin (sym {!invariantLength-rotateDown!}) n) -- (subst {!!} (sym {!!}) {!!})
+
+  --rotateDownBy' n ∅ = ∅
+  --rotateDownBy' x zero = x
+  --rotateDownBy' x (suc n) = x |⋙ rotateDown ⋙ rotateDownBy' n
+
+module M₂ where
+  data Fin : ℕ → Set where
+    zero : ∀ ..{n} → Fin (suc n)
+    suc  : ∀ ..{n} (i : Fin n) → Fin (suc n)
+
+  postulate
+    invariantLength : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s : x₀ ∉ x₁s) → suc (length x₁s) ≡ length (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s))
+    expandFin : ∀ {n} → Fin n → Fin (suc n)
+
+  {-# TERMINATING #-}
+  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (suc (length xs)) → 𝕃 𝐴
+  rotateDownBy' ∅ zero = ∅
+  rotateDownBy' ∅ (suc ())
+  rotateDownBy' (✓ x₀∉x₁s) zero = ✓ x₀∉x₁s
+  rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc n) = rotateDownBy' (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s)) (expandFin (subst Fin (invariantLength x₀ x₁s x₀∉x₁s) n))
+
+
+module M₃ where
+  open import Prelude.Nat
+  open import Prelude.Bool
+  open import Prelude.Equality
+
+  invariantLength₁ : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀ : 𝐴} {x₁s} {x₀∉x₁s : x₀ ∉ x₁s} → length x₁s ≡ length (init (✓ x₀∉x₁s))
+  invariantLength₁ {𝑨} {𝐴} {x₀} {.∅} {∅} = refl
+  invariantLength₁ {𝑨} {𝐴} {x₁} {.(✓ {_} {_} {x₀} {x₁s} x₀∉x₁s)} {● {x₀ = x₀} x {x₁s = x₁s} x₀∉x₁s₁ x₀∉x₁s} = cong suc (invariantLength₁ {x₁s = x₁s})
+
+  invariantLength₂ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} → length xs ≡ length (rotateDown xs)
+  invariantLength₂ {xs = ∅} = refl
+  invariantLength₂ {xs = ✓ ∅} = refl
+  invariantLength₂ {xs = ✓ {x₀ = x₀} {x₁s = x₁s} (● {x₀ = x₁} x₀≢x₁ {x₁s = x₂s} x₀∉x₂s x₁∉x₂s)} = cong (λ x → suc (suc x)) (invariantLength₁ {x₀∉x₁s = x₁∉x₂s})
+
+  thm₁ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
+  thm₁ {n} {zero} ()
+  thm₁ {zero} {suc zero} ()
+  thm₁ {zero} {suc (suc m)} true = true
+  thm₁ {suc n} {suc m} x = thm₁ {n = n} {m = m} x
+
+  thm₂ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
+  thm₂ {zero} {zero} ()
+  thm₂ {zero} {suc _} _ = true
+  thm₂ {suc n} {zero} ()
+  thm₂ {suc n} {suc m} x = thm₂ {n = n} {m = m} x
+
+  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} {n : ℕ} → (xs : 𝕃 𝐴) (n<xs : IsTrue (n < length xs)) → 𝕃 𝐴
+  rotateDownBy' {𝑨} {𝐴} {zero} xs _ = xs
+  rotateDownBy' {𝑨} {𝐴} {suc n} xs n<xs = rotateDownBy' {n = n} (rotateDown xs) (thm₂ {n = n} {m = length (rotateDown xs)} (subst (λ x → IsTrue (lessNat (suc n) x)) (invariantLength₂ {xs = xs}) n<xs))
+
+open import Prelude.Fin
+open import Data.Fin
