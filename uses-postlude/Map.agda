@@ -3,7 +3,7 @@ module Map where
   open import Tactic.Reflection.Reright
 
   module _ {𝑲 𝑽} (let 𝑲𝑽 = 𝑲 ⊔ₗ 𝑽 ; 𝑲𝑽₁ = sucₗ 𝑲𝑽) where
-    record Map 
+    record Map
              {K : Set 𝑲}
              (V : K → Set 𝑽)
              (Carrier : ℕ → Set 𝑲𝑽) {{isDecEquivalence/K : Eq K}} {{isDecEquivalence/V : (k : K) → Eq (V k)}} : Set 𝑲𝑽₁ where
@@ -11,28 +11,28 @@ module Map where
         ∅ : Carrier 0
         _∉_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
         ∅-is-empty : ∀ {𝑘} {∅ : Carrier 0} → 𝑘 ∉ ∅
-        
+
       _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
       _∈_ k m = ¬ k ∉ m
-   
+
       field
         get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
         get-is-unique : ∀ {k : K} {s} {m : Carrier s} → (k∈m¹ : k ∈ m) (k∈m² : k ∈ m) → get k∈m¹ ≡ get k∈m²
-        
+
       infixl 40 _⊆_
       _⊆_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
       _⊆_ m₁ m₀ = ∀ {𝑘} → (𝑘∈m₁ : 𝑘 ∈ m₁) → ∃ λ (𝑘∈m₀ : 𝑘 ∈ m₀) → get 𝑘∈m₁ ≡ get 𝑘∈m₀
-   
+
       infixl 40 _⊂_∣_
       _⊂_∣_ : ∀ {s₀ s₁} → Carrier s₀ → Carrier s₁ → (K → Set 𝑲) → Set 𝑲𝑽
       _⊂_∣_ m₀ m₁ c = ∀ {𝑘} → c 𝑘 → (𝑘∈m₀ : 𝑘 ∈ m₀) → ∃ λ (𝑘∈m₁ : 𝑘 ∈ m₁) → get 𝑘∈m₀ ≡ get 𝑘∈m₁
-   
+
       field
         put : ∀ {k₀ : K} (v₀ : V k₀) {s₁} {m₁ : Carrier s₁} → k₀ ∉ m₁ → ∃ λ (m₀ : Carrier (suc s₁)) → ∃ λ (k₀∈m₀ : k₀ ∈ m₀) → get k₀∈m₀ ≡ v₀ × m₁ ⊆ m₀ × m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀
         _∉?_ : ∀ {s} → (k : K) (m : Carrier s) → Dec (k ∉ m)
         choose : ∀ {s} → (m : Carrier s) → Dec (∃ λ k → k ∈ m)
         pick : ∀ {k₀ : K} {s₁} {m₀ : Carrier (suc s₁)} → k₀ ∈ m₀ → ∃ λ (m₁ : Carrier s₁) → m₁ ⊆ m₀ × (m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀) × k₀ ∉ m₁
-   
+
       private
         helper2 : ∀ {𝑘}
                     {a}
@@ -52,7 +52,7 @@ module Map where
         helper2 refl get/a∈y≡get/a∈x (a∈z , get/a∈x≡get/z) =
           a∈z ,
           trans (get-is-unique _ _) (trans get/a∈y≡get/a∈x get/a∈x≡get/z)
-   
+
         infixl 10 _≫=_
         _≫=_ : ∀ {𝑘}
                   {s/x}
@@ -66,7 +66,7 @@ module Map where
                   (𝑘∈y→Σ𝑘∈z : (𝑘∈y : 𝑘 ∈ y) → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈y ≡ get 𝑘∈z))
                 → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈x ≡ get 𝑘∈z)
         (𝑘∈y , get/𝑘∈x≡get/𝑘∈y) ≫= 𝑘∈y→Σ𝑘∈z = proj₁ (𝑘∈y→Σ𝑘∈z 𝑘∈y) , trans get/𝑘∈x≡get/𝑘∈y (proj₂ (𝑘∈y→Σ𝑘∈z 𝑘∈y))
-   
+
       union : ∀ {s/x s/y} (x : Carrier s/x) → (y : Carrier s/y) → Dec (∃ λ s/z → ∃ λ (z : Carrier s/z) → (x ⊆ z) × (y ⊆ z) × ∀ {𝑘} → 𝑘 ∈ z → ((𝑘 ∈ x) ⊎ (𝑘 ∈ y)))
       union {0} x y = yes $
         _ ,
