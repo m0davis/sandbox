@@ -55,7 +55,24 @@ module Free where
     diff (free f (m ∷ ms)) (free g (n ∷ ns)) with free f (m ∷ ms) ≞? free g (n ∷ ns)
     diff (free f (m ∷ ms)) (free g (n ∷ ns)) | yes p = Equal p
     diff (free f (m ∷ ms)) (free g (n ∷ ns)) | no ¬p = Free∷Free∷ ¬p (diff (f m) (g n)) (diff (free f ms) (free g ns))
+{-
+    diff' : (X : Free List A) → (Y : Free List A) → X ⋒ Y
+    diff' X Y = Equal {!!}
 
+    left : ∀ {X : Free List A} {Y : Free List A} → X ⋒ Y → Free List A
+    left {X = X} _ = X
+
+    right : ∀ {X : Free List A} {Y : Free List A} → X ⋒ Y → Free List A
+    right {Y = Y} _ = Y
+
+    diffLaw : (X : Free List A) → (Y : Free List A) → ∃ λ (X⋒Y : X ⋒ Y) → left X⋒Y ≞ X × right X⋒Y ≞ Y
+    diffLaw (pure x) (pure y) with x ≟ y
+    diffLaw (pure x) (pure y) | yes p rewrite p = (diff (pure y) (pure y)) , pure≞ , pure≞
+    diffLaw (pure x) (pure y) | no ¬p = {!!}
+    diffLaw (pure x₁) (free x₂ x₃) = {!!}
+    diffLaw (free x₁ x₂) (pure x₃) = {!!}
+    diffLaw (free x₁ x₂) (free x₃ x₄) = {!!}
+-}
     data _⋐_ : (X : Free List A) {Y : Free List A} (X⋒Y : X ⋒ Y) → Set (sucₗ α) where
       Equal : ∀ {X : Free List A} {Y : Free List A} (X≞Y : X ≞ Y) → X ⋐ Equal X≞Y
       PureFree : (x : A) → ∀ {N : Set α} → (g : N → Free List A) → (ns : List N) → pure x ⋐ PureFree x g ns
