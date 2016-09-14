@@ -1,6 +1,6 @@
 module Free where
   open import Postlude
-  
+
   data Free {𝑨} (F : Set 𝑨 → Set 𝑨) (A : Set 𝑨) : Set (sucₗ 𝑨) where
     pure : A → Free F A
     free : ∀ {𝑎 : Set 𝑨} → (𝑎 → Free F A) → F 𝑎 → Free F A
@@ -30,10 +30,10 @@ module Free where
 
     pure≞ : ∀ {x : A} → pure x ≞ pure x
     pure≞ = Pure refl
-    
+
     empty≞ : ∀ {M N : Set α} → {f : M → Free List A} → {g : N → Free List A} → free f [] ≞ free g []
     empty≞ {f = f} {g = g} = Free[] f g
-    
+
     data _⋒_ : (X : Free List A) → (Y : Free List A) → Set (sucₗ α) where
       Equal : ∀ {X : Free List A} {Y : Free List A} → X ≞ Y → X ⋒ Y
       Pure : {x : A} → {y : A} → x ≢ y → pure x ⋒ pure y
@@ -100,7 +100,7 @@ module Free where
                    {rest : free f ms ⋒ free g ns} →
                    {fm⋐first : f m ⋐ first} →
                    {freefms⋐rest : free f ms ⋐ rest}
-                   (a∈pffirst : a ∈pf fm⋐first) → 
+                   (a∈pffirst : a ∈pf fm⋐first) →
                    a ∈pf Free∷Free∷ notequal fm⋐first freefms⋐rest
       descend2 : (a : A) {M N : Set α} →
                    {f : M → Free List A} →
@@ -112,14 +112,14 @@ module Free where
                    {rest : free f ms ⋒ free g ns} →
                    {fm⋐first : f m ⋐ first} →
                    {freefms⋐rest : free f ms ⋐ rest}
-                   (a∈pffirst : a ∈pf freefms⋐rest) → 
+                   (a∈pffirst : a ∈pf freefms⋐rest) →
                    a ∈pf Free∷Free∷ notequal fm⋐first freefms⋐rest
 
     getpf : ∀ {a : A} {X : Free List A} {Y : Free List A} {X⋒Y : X ⋒ Y} {X⋐X⋒Y : X ⋐ X⋒Y} → (a ∈pf X⋐X⋒Y) → Free List A
     getpf (singleton a g ns) = free g ns
     getpf (descend1 a x) = getpf x
     getpf (descend2 a x) = getpf x
-    
+
     _∈pf?_ : (a : A) {X : Free List A} {Y : Free List A} {X⋒Y : X ⋒ Y} (X⋐X⋒Y : X ⋐ X⋒Y) → Dec (a ∈pf X⋐X⋒Y)
     _∈pf?_ a (Equal X≞Y) = no (λ ())
     _∈pf?_ a (PureFree x g ns) with a ≟ x
