@@ -1,6 +1,9 @@
 --{-# OPTIONS --show-implicit #-}
 module Scratch where
 
+module StandardLibrary where
+  open import Everything
+
 module No-eta-equality where
 
   open import Prelude.Equality
