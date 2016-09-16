@@ -3,6 +3,39 @@ module Map where
   open import Tactic.Reflection.Reright
 
   module _ {𝑲 𝑽} (let 𝑲𝑽 = 𝑲 ⊔ₗ 𝑽 ; 𝑲𝑽₁ = sucₗ 𝑲𝑽) where
+    {-
+    record IsUniqueGet {K : Set 𝑲}
+             (V : K → Set 𝑽) (Carrier : ℕ → Set 𝑲𝑽) (_∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽) : Set 𝑲𝑽 where
+      field
+        get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
+        get-is-unique : ∀ {k : K} {s} {m : Carrier s} → (k∈m¹ : k ∈ m) (k∈m² : k ∈ m) → get k∈m¹ ≡ get k∈m²
+
+      infixl 40 _⊆_
+      _⊆_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
+      _⊆_ m₁ m₀ = ∀ {𝑘} → (𝑘∈m₁ : 𝑘 ∈ m₁) → ∃ λ (𝑘∈m₀ : 𝑘 ∈ m₀) → get 𝑘∈m₁ ≡ get 𝑘∈m₀
+
+      infixl 40 _⊂_∣_
+      _⊂_∣_ : ∀ {s₀ s₁} → Carrier s₀ → Carrier s₁ → (K → Set 𝑲) → Set 𝑲𝑽
+      _⊂_∣_ m₀ m₁ c = ∀ {𝑘} → c 𝑘 → (𝑘∈m₀ : 𝑘 ∈ m₀) → ∃ λ (𝑘∈m₁ : 𝑘 ∈ m₁) → get 𝑘∈m₀ ≡ get 𝑘∈m₁
+    -}
+
+    record ∈get≡ {K : Set 𝑲}
+                 {V : K → Set 𝑽}
+                 (Carrier : ℕ → Set 𝑲𝑽)
+                 (_∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽)
+                 {𝑘 : K}
+                 {s₁ s₀}
+                 (m₁ : Carrier s₁)
+                 (m₀ : Carrier s₀)
+                 (𝑘∈m₁ : 𝑘 ∈ m₁)
+                 (get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k)
+                 : Set 𝑲𝑽 where
+      constructor _,_
+      field
+        ∈' : 𝑘 ∈ m₀
+        get' : get 𝑘∈m₁ ≡ get ∈'
+
+
     record Map
              {K : Set 𝑲}
              (V : K → Set 𝑽)
@@ -14,10 +47,20 @@ module Map where
 
       _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
       _∈_ k m = ¬ k ∉ m
+      {-
+      field
+        isUniqueGet : IsUniqueGet V Carrier _∈_
+
+      open IsUniqueGet isUniqueGet public
+      -}
 
       field
         get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
         get-is-unique : ∀ {k : K} {s} {m : Carrier s} → (k∈m¹ : k ∈ m) (k∈m² : k ∈ m) → get k∈m¹ ≡ get k∈m²
+
+      infixl 40 _⊆'_
+      _⊆'_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
+      _⊆'_ m₁ m₀ = ∀ {𝑘} → (𝑘∈m₁ : 𝑘 ∈ m₁) → ∈get≡ Carrier _∈_ m₁ m₀ 𝑘∈m₁ get
 
       infixl 40 _⊆_
       _⊆_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
