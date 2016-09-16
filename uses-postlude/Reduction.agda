@@ -61,7 +61,13 @@ module Reduction where
                                                          let ∈fr , get⋆≡get∈fr = Σ[∈fr,get⋆≡get∈fr] in
                                                            ∈fr ,
                                                            trans (trans (get-is-unique ∈m3 $ proj₁ $ ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m1) (sym (proj₂ $ ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m1))) get⋆≡get∈fr
-                                         ; (inj₂ ∈m2) → {!helper←2 ∈m2→Σ[∈r,get∈m2≡get⋆] ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2!} }) {-helper← ∈m3→∈m1⊎∈m2 ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m2→Σ[∈r,get∈m2≡get⋆] ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m3-}}) where
+                                          ; (inj₂ ∈m2) → let Σ[∈fr,get⋆≡get∈fr] = helper←2 ∈m2→Σ[∈r,get∈m2≡get⋆] ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2 in
+                                                         let ∈fr , get⋆≡get∈fr = Σ[∈fr,get⋆≡get∈fr] in
+                                                           ∈fr ,
+                                                           trans (trans (get-is-unique ∈m3 $ proj₁ $ ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2) (sym (proj₂ $ ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2))) get⋆≡get∈fr
+                                          })
+    })
+    where
     helper→ : ∀
       {a}
       {M N : Set _} →
