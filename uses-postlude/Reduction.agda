@@ -100,8 +100,8 @@ module Reduction where
       {a}
       {s1}
       {m1 : M s1}
-      (∈m1→Σ[∈f,get∈m1≡get⋆] : ∀ {a : A} (a∈binding : a ∉ m1 → ⊥) → Σ ((FreeComparison._∈pf_ {{isDecEquivalence/A}} a) f) (λ a∈pfPAT⋐PAT⋒EXP → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP))
-      (∈m1→Σ[∈m3,get∈m1≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∉ m1 → ⊥) → Σ (𝑘 ∉ m3 → ⊥) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
+      (∈m1→Σ[∈f,get∈m1≡get⋆] : ∀ {a : A} (a∈binding : a ∈ m1) → Σ ((FreeComparison._∈pf_ {{isDecEquivalence/A}} a) f) (λ a∈pfPAT⋐PAT⋒EXP → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP))
+      (∈m1→Σ[∈m3,get∈m1≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∈ m1) → Σ (𝑘 ∈ m3) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
       → (∈m1 : a ∈ m1) → Σ (a ∈pf Free∷Free∷ notequal f r) (λ ∈fr → get ∈m1 ≡ getpf ∈fr)
     helper←1 ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m1 = descend1 _ ∈f , (proj₂ $ ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1) where
       ∈f = proj₁ $ ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1
@@ -110,8 +110,8 @@ module Reduction where
       {a}
       {s2}
       {m2 : M s2}
-      (∈m2→Σ[∈r,get∈m2≡get⋆] : ∀ {a : A} (a∈binding : a ∉ m2 → ⊥) → Σ ((FreeComparison._∈pf_ {{isDecEquivalence/A}} a) r) (λ a∈pfPAT⋐PAT⋒EXP → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP))
-      (∈m2→Σ[∈m3,get∈m2≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∉ m2 → ⊥) → Σ (𝑘 ∉ m3 → ⊥) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
+      (∈m2→Σ[∈r,get∈m2≡get⋆] : ∀ {a : A} (a∈binding : a ∈ m2) → Σ ((FreeComparison._∈pf_ {{isDecEquivalence/A}} a) r) (λ a∈pfPAT⋐PAT⋒EXP → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP))
+      (∈m2→Σ[∈m3,get∈m2≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∈ m2) → Σ (𝑘 ∈ m3) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
       → (∈m2 : a ∈ m2) → Σ (a ∈pf Free∷Free∷ notequal f r) (λ ∈fr → get ∈m2 ≡ getpf ∈fr)
     helper←2 ∈m2→Σ[∈r,get∈m1≡get⋆] ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2 = {!!}
 
