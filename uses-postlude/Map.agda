@@ -106,7 +106,7 @@ module Map where
               (λ {∈x₋ₐ → x₋ₐ⊆x ∈x₋ₐ ≫= λ ∈x → x⊆z ∈x}) ,
               (λ {𝑘} ∈y₊ₐ → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
                 (λ {
-                  (yes 𝑘≡a) → helper2 𝑘≡a get/a∈y₊ₐ≡get/a∈x (x⊆z a∈x)
+                  (yes 𝑘≡a) → reright 𝑘≡a {!!} -- helper2 𝑘≡a get/a∈y₊ₐ≡get/a∈x (x⊆z a∈x)
                 ; (no 𝑘≢a) → y₊ₐ⊂y|≢a 𝑘≢a ∈y₊ₐ ≫= λ ∈y → y⊆z ∈y
                 })
               ) ,
