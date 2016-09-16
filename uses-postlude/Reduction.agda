@@ -1,31 +1,31 @@
 module Reduction where
   open import Postlude
   open import Free
- 
+
   postulate
     A : Set
-    
+
   V : A → Set₁
   V = λ _ → Free List A
- 
+
   postulate
     M : ℕ → Set₁
     isDecEquivalence/A : Eq A
     isDecEquivalence/V : (a : A) → Eq (V a)
- 
+
   open import Map
   postulate
     m : Map V M {{isDecEquivalence/A}} {{isDecEquivalence/V}}
- 
+
   open FreeComparison {{isDecEquivalence/A}}
   open Map.Map m
- 
+
   _⋐⋒<Map_ : ∀ {PAT EXP : Free List A} {PAT⋒EXP : PAT ⋒ EXP} (PAT⋐PAT⋒EXP : PAT ⋐ PAT⋒EXP) {s} (binding : M s) → Set₁
   PAT⋐PAT⋒EXP ⋐⋒<Map binding = ∀ {a} (a∈pfPAT⋐PAT⋒EXP : a ∈pf PAT⋐PAT⋒EXP) → ∃ λ (a∈binding : a ∈ binding) → getpf a∈pfPAT⋐PAT⋒EXP ≡ get a∈binding
- 
+
   _Map<⋐⋒_ : ∀ {s} (binding : M s) {PAT EXP : Free List A} {PAT⋒EXP : PAT ⋒ EXP} (PAT⋐PAT⋒EXP : PAT ⋐ PAT⋒EXP) → Set₁
   binding Map<⋐⋒ PAT⋐PAT⋒EXP = ∀ {a} (a∈binding : a ∈ binding) → ∃ λ (a∈pfPAT⋐PAT⋒EXP : a ∈pf PAT⋐PAT⋒EXP) → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP
- 
+
   open import Tactic.Reflection.Reright
 
   reduce-PureFree-to-map : ∀
@@ -81,7 +81,7 @@ module Reduction where
       → (∈fr : a ∈pf Free∷Free∷ notequal F R) → Σ (a ∈ m3) (λ a∈m3 → getpf ∈fr ≡ get a∈m3)
     helper→ ∈f→Σ[∈m1,get∈f≡get⋆] _ ∈m1→Σ[∈m3,get∈m1≡get⋆] _ (descend1 a ∈fr) = {!∈f→Σ[∈m1,get∈f≡get⋆] ∈fr!}
     helper→ _ ∈r→Σ[∈m2,get∈f≡get⋆] _ ∈m2→Σ[∈m3,get∈m2≡get⋆] (descend2 a ∈fr) = {!!}
- 
+{-
     helper← : ∀
       {a}
       {s3}
@@ -95,7 +95,7 @@ module Reduction where
     helper← ∈m3→∈m1⊎∈m2 _ _ _ _ ∈m3 with ∈m3→∈m1⊎∈m2 ∈m3
     helper← _ ∈m1→Σ[∈f,get∈m1≡get⋆] _ ∈m1→Σ[∈m3,get∈m1≡get⋆] _ _ | inj₁ ∈m1 = {!∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1!} -- -- ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m1
     helper← _ _ ∈m2→Σ[∈r,get∈m2≡get⋆] _ ∈m2→Σ[∈m3,get∈m2≡get⋆] _ | inj₂ ∈m2 = {!!}
-      
+-}
     helper←1 : ∀
       {a}
       {s1}
@@ -105,7 +105,7 @@ module Reduction where
       → (∈m1 : a ∈ m1) → Σ (a ∈pf Free∷Free∷ notequal f r) (λ ∈fr → get ∈m1 ≡ getpf ∈fr)
     helper←1 ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1→Σ[∈m3,get∈m1≡get⋆] ∈m1 = descend1 _ ∈f , (proj₂ $ ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1) where
       ∈f = proj₁ $ ∈m1→Σ[∈f,get∈m1≡get⋆] ∈m1
-      
+
     helper←2 : ∀
       {a}
       {s2}
@@ -114,12 +114,12 @@ module Reduction where
       (∈m2→Σ[∈m3,get∈m2≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∉ m2 → ⊥) → Σ (𝑘 ∉ m3 → ⊥) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
       → (∈m2 : a ∈ m2) → Σ (a ∈pf Free∷Free∷ notequal f r) (λ ∈fr → get ∈m2 ≡ getpf ∈fr)
     helper←2 ∈m2→Σ[∈r,get∈m1≡get⋆] ∈m2→Σ[∈m3,get∈m2≡get⋆] ∈m2 = {!!}
-      
+
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) | yes (s1 , m1 , proj₃ , proj₄) | yes (s2 , m2 , proj7 , proj8) | no ¬p = {!!}
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) | yes (proj₁ , proj₂ , proj₃ , proj₄) | no ¬p = {!!}
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) | no ¬p | yes p = {!!}
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) | no ¬p | no ¬p₁ = {!!}
- 
+
   postulate
     reduce-PureFree-to-map' : ∀
       {PAT EXP : Free List A}
@@ -133,7 +133,7 @@ module Reduction where
                ×
             (∀ {a} (a∈binding : a ∈ binding) → ∃ λ (a∈pfPAT⋐PAT⋒EXP : a ∈pf PAT⋐PAT⋒EXP) → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP)
         )
-   
+
     substitute : ∀ {s} → M s → Free List A → Free List A
     substitute-law : ∀
       {s}
