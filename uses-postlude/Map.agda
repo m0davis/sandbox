@@ -202,7 +202,7 @@ module Map where
       record R (P : A) : Set where
       --module _ (P : A) where
         fails : Set
-        fails = trust-the-doppelganger -- failed defining a function with type {A₁ : Set} {z : A₁} .(r : R z) → Set
+        fails = {!!} -- trust-the-doppelganger -- failed defining a function with type {A₁ : Set} {z : A₁} .(r : R z) → Set
 
   module M₇ (A : Set) where
     open import Postlude
@@ -211,19 +211,16 @@ module Map where
     postulate
       trustMe : ∀ {α} {A : Set α} → A
 
-    helper-type : Type
-    helper-type =
+    helper-type : Name → Type
+    helper-type n =
       pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
       (abs "_"
        (pi (arg (arg-info hidden relevant) (var 0 []))
-        {-
         (abs "_"
          (pi
           (arg (arg-info visible irrelevant)
-           (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-        -}
-          (abs "_" (agda-sort (lit 0)))))
-        -- ))
+           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+          (abs "_" (agda-sort (lit 0)))))))
 
     helper-patterns : List (Arg Pattern)
     helper-patterns =
@@ -234,17 +231,71 @@ module Map where
     helper-term = def₀ (quote trustMe)
 
     macro
-      helper : Tactic
-      helper hole = do
+      helper : Name → Tactic
+      helper nam hole = do
         n ← freshName "helper" -|
-        catchTC (define (vArg n) helper-type [ clause helper-patterns helper-term ])
+        catchTC (define (vArg n) (helper-type nam) [ clause helper-patterns helper-term ])
                 (typeError ( strErr "error defining helper function" ∷ []))
         ~|
         unify hole helper-term
 
-    record R (a : A) : Set where
+    record R (a : Set) : Set where
       err : Set
-      err = helper
+      err = {!!} -- helper (quote R)
+
+  module M₇' (A : Set) where
+    open import Postlude
+    open import Tactic.Reflection
+
+    postulate
+      trustMe : ∀ {α} {A : Set α} → A
+
+    helper-type : Name → Type
+    helper-type n =
+      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
+      (abs "_"
+       (pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
+        (abs "_"
+         (pi
+          (arg (arg-info visible irrelevant)
+           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+          (abs "_" (agda-sort (lit 0)))))))
+    {-
+      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
+      (abs "_"
+       (pi (arg (arg-info hidden relevant) (var 0 []))
+        (abs "_"
+         (pi
+          (arg (arg-info visible irrelevant)
+           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+          (abs "_" (agda-sort (lit 0)))))))
+    -}
+
+    helper-patterns : List (Arg Pattern)
+    helper-patterns =
+      arg (arg-info hidden relevant) (var "_") ∷
+      arg (arg-info hidden relevant) (var "_") ∷ []
+
+    helper-term : Term
+    helper-term = def₀ (quote trustMe)
+
+    macro
+      helper : Name → Tactic
+      helper nam hole = do
+        n ← freshName "helper" -|
+        catchTC (define (vArg n) (helper-type nam) [ clause helper-patterns helper-term ])
+                (typeError ( strErr "error defining helper function" ∷ []))
+        ~|
+        unify hole helper-term
+
+    record R-succeeds (a : Set) : Set where
+      test : Set
+      test = helper (quote R-succeeds)
+
+    record R-fails (a : A) : Set where
+      test : Set
+      test = {!!} -- helper (quote R)
+-- see M₉
 
   module M₈ where
     open import Prelude
@@ -282,7 +333,55 @@ module Map where
     outside-M₁-succeeds : (A : Set) → NM₁.P A
     outside-M₁-succeeds = trust-the-doppelganger
 
+  module M₉ where
+    open import Prelude
+    open import Tactic.Reflection
 
+    helper-type : Name → Type → Type
+    helper-type record-name record-parameter-type =
+      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
+      (abs "_"
+       (pi (arg (arg-info hidden relevant) record-parameter-type)
+        (abs "_"
+         (pi
+          (arg (arg-info visible irrelevant)
+           (def record-name (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+          (abs "_" (agda-sort (lit 0)))))))
+
+    helper-patterns : List (Arg Pattern)
+    helper-patterns =
+      arg (arg-info hidden relevant) (var "_") ∷
+      arg (arg-info hidden relevant) (var "_") ∷ []
+
+    helper-term : Name → Term
+    helper-term solution-name = def₀ solution-name
+
+    helper-tactic : Name → Type → Name → Tactic
+    helper-tactic record-name record-parameter-type solution-name hole = do
+      n ← freshName "helper" -|
+      catchTC (define (vArg n)
+                      (helper-type record-name record-parameter-type)
+                      [ clause helper-patterns (helper-term solution-name) ])
+              (typeError ( strErr "error defining helper function" ∷ []))
+      ~|
+      unify hole (helper-term solution-name)
+
+    module _ (A : Set) where
+      postulate
+        trustMe : ∀ {α} {A : Set α} → A
+
+      record R-independent-succeeds (a : Set) : Set where
+        test : Set
+        test = unquote (helper-tactic (quote R-independent-succeeds)
+                                      (agda-sort (lit 0))
+                                      (quote trustMe))
+{-
+      record R-dependent-fails (a : A) : Set where
+        test : Set
+        test = unquote (helper-tactic (quote R-dependent-fails)
+                                      (var 0 [])
+                                      (quote trustMe))
+-}
 {-
 /home/martin/Desktop/scratch/uses-postlude/Map.agda:68,19-35
 error defining helper function
