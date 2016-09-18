@@ -1,499 +1,177 @@
 module Map where
-  -- produces weird conflict with 𝑽
-  module M₁ where
-    open import Postlude
-    open import Tactic.Reflection.Reright
+  open import Postlude
+  open import Tactic.Reflection.Reright
 
-    module M₁' {𝑲 𝑽} (let 𝑲𝑽 = 𝑲 ⊔ₗ 𝑽 ; 𝑲𝑽₁ = sucₗ 𝑲𝑽) where
-      record R
-               {K : Set 𝑲}
-               (V : K → Set 𝑽)
-               (Carrier : ℕ → Set 𝑲𝑽) (isDecEquivalence/K : Eq K) : Set 𝑲𝑽₁ where
-        field
-          _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
-          get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
+  module _ {𝑲 𝑽} (let 𝑲𝑽 = 𝑲 ⊔ₗ 𝑽 ; 𝑲𝑽₁ = sucₗ 𝑲𝑽) where
+    record Map
+             {K : Set 𝑲}
+             (V : K → Set 𝑽)
+             (Carrier : ℕ → Set 𝑲𝑽) {{isDecEquivalence/K : Eq K}} {{isDecEquivalence/V : (k : K) → Eq (V k)}} : Set 𝑲𝑽₁ where
+      field
+        ∅ : Carrier 0
+        _∉_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
+        ∅-is-empty : ∀ {𝑘} {∅ : Carrier 0} → 𝑘 ∉ ∅
 
-        infixl 40 _⊆_
-        _⊆_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
-        _⊆_ m₁ m₀ = ∀ {𝑘} → (𝑘∈m₁ : 𝑘 ∈ m₁) → ∃ λ (𝑘∈m₀ : 𝑘 ∈ m₀) → get 𝑘∈m₁ ≡ get 𝑘∈m₀
+      _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
+      _∈_ k m = ¬ k ∉ m
 
-        field
-          choose : ∀ {s} → (m : Carrier s) → Dec (∃ λ k → k ∈ m)
+      field
+        get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
+        get-is-unique : ∀ {k : K} {s} {m : Carrier s} → (k∈m¹ : k ∈ m) (k∈m² : k ∈ m) → get k∈m¹ ≡ get k∈m²
 
-        err₁ : ∀ {s/x} (x : Carrier s/x) → ∃ λ s/z → ∃ λ (z : Carrier s/z) → (x ⊆ z)
-        err₁ x with choose x
-        err₁ x | yes (a , a∈x) =
-          {!!} ,
-          {!!} ,
-          (λ {𝑘} ∈x → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
-            (λ {
-              (yes 𝑘≡a) → {!!} -- reright 𝑘≡a {!!}
-            ; (no 𝑘≢a) → {!!}
-            }))
-        err₁ x | no ∉x = {!!}
+      infixl 40 _⊆_
+      _⊆_ : ∀ {s₁ s₀} → Carrier s₁ → Carrier s₀ → Set 𝑲𝑽
+      _⊆_ m₁ m₀ = ∀ {𝑘} → (𝑘∈m₁ : 𝑘 ∈ m₁) → ∃ λ (𝑘∈m₀ : 𝑘 ∈ m₀) → get 𝑘∈m₁ ≡ get 𝑘∈m₀
 
-        err₂ : K → K → Set
-        err₂ k a = case _≟_ {{isDecEquivalence/K}} k a of ((λ {
-              (yes 𝑘≡a) → {!!} -- reright 𝑘≡a {!!}
-            ; (no 𝑘≢a) → {!!}
-            }))
+      infixl 40 _⊂_∣_
+      _⊂_∣_ : ∀ {s₀ s₁} → Carrier s₀ → Carrier s₁ → (K → Set 𝑲) → Set 𝑲𝑽
+      _⊂_∣_ m₀ m₁ c = ∀ {𝑘} → c 𝑘 → (𝑘∈m₀ : 𝑘 ∈ m₀) → ∃ λ (𝑘∈m₁ : 𝑘 ∈ m₁) → get 𝑘∈m₀ ≡ get 𝑘∈m₁
 
-  -- error defining helper function
-  module M₂ where
-    open import Postlude
+      field
+        put : ∀ {k₀ : K} (v₀ : V k₀) {s₁} {m₁ : Carrier s₁} → k₀ ∉ m₁ → ∃ λ (m₀ : Carrier (suc s₁)) → ∃ λ (k₀∈m₀ : k₀ ∈ m₀) → get k₀∈m₀ ≡ v₀ × m₁ ⊆ m₀ × m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀
+        _∉?_ : ∀ {s} → (k : K) (m : Carrier s) → Dec (k ∉ m)
+        choose : ∀ {s} → (m : Carrier s) → Dec (∃ λ k → k ∈ m)
+        pick : ∀ {k₀ : K} {s₁} {m₀ : Carrier (suc s₁)} → k₀ ∈ m₀ → ∃ λ (m₁ : Carrier s₁) → m₁ ⊆ m₀ × (m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀) × k₀ ∉ m₁
 
-    module M₂' (𝑲 : Level) where
-      open import Tactic.Reflection.Reright
+      private
+        helper2 : ∀ {𝑘}
+                    {a}
+                    {s/x}
+                    {s/y}
+                    {s/z}
+                    {x : Carrier s/x}
+                    {y : Carrier s/y}
+                    {z : Carrier s/z}
+                    {a∈x : a ∈ x}
+                    {a∈y : a ∈ y}
+                    (𝑘≡a : 𝑘 ≡ a)
+                    {𝑘∈y : 𝑘 ∈ y}
+                    (get/a∈y≡get/a∈x : get a∈y ≡ get a∈x)
+                    (Σa∈z[get/a∈x≡get/a∈z] : Σ (a ∈ z) (λ a∈z → get a∈x ≡ get a∈z))
+                  → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈y ≡ get 𝑘∈z)
+        helper2 refl get/a∈y≡get/a∈x (a∈z , get/a∈x≡get/z) =
+          a∈z ,
+          trans (get-is-unique _ _) (trans get/a∈y≡get/a∈x get/a∈x≡get/z)
 
-      record R {K : Set 𝑲} (isDecEquivalence/K : Eq K) : Set where
-        err₂ : K → K → Set
-        err₂ k a = case _≟_ {{isDecEquivalence/K}} k a of ((λ {
-              (yes 𝑘≡a) → {!!} -- reright 𝑘≡a {!!}
-            ; (no 𝑘≢a) → {!!}
-            }))
+        infixl 10 _≫=_
+        _≫=_ : ∀ {𝑘}
+                  {s/x}
+                  {s/y}
+                  {s/z}
+                  {x : Carrier s/x}
+                  {y : Carrier s/y}
+                  {z : Carrier s/z}
+                  {𝑘∈x : 𝑘 ∈ x}
+                  (Σ𝑘∈y : Σ (𝑘 ∈ y) (λ 𝑘∈y → get 𝑘∈x ≡ get 𝑘∈y))
+                  (𝑘∈y→Σ𝑘∈z : (𝑘∈y : 𝑘 ∈ y) → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈y ≡ get 𝑘∈z))
+                → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈x ≡ get 𝑘∈z)
+        (𝑘∈y , get/𝑘∈x≡get/𝑘∈y) ≫= 𝑘∈y→Σ𝑘∈z = proj₁ (𝑘∈y→Σ𝑘∈z 𝑘∈y) , trans get/𝑘∈x≡get/𝑘∈y (proj₂ (𝑘∈y→Σ𝑘∈z 𝑘∈y))
 
-        err₃ : (k a : K) (k≡a : k ≡ a) → Set
-        err₃ k a k≡a = {!!} -- reright k≡a {!!}
-
-  -- ok
-  module M₃ where
-    open import Postlude
-    open import Tactic.Reflection.Reright
-
-    record R {K : Set} (isDecEquivalence/K : Eq K) : Set where
-      err₂ : K → K → Set
-      err₂ k a = case _≟_ {{isDecEquivalence/K}} k a of ((λ {
-            (yes 𝑘≡a) → reright 𝑘≡a {!!}
-          ; (no 𝑘≢a) → {!!}
-          }))
-
-      err₃ : (k a : K) (k≡a : k ≡ a) → Set
-      err₃ k a k≡a = reright k≡a {!!}
-
-  -- error defining helper function
-  module M₄ (A : Set) where
-    open import Postlude
-    open import Tactic.Reflection.Reright
-
-    postulate
-      trustMe : ∀ {α} {A : Set α} → A
-
-    record R (a : A) : Set where
-    {-
-      err : (x : A) (x≡x : x ≡ x) → Set
-      err _ x≡x =
-        -- reright x≡x {!!} where open import Agda.Builtin.Reflection
-        -- helper
-        {!!}
-        where
-    -}
-
-      err : Set
-      err = {!helper!} where
-        open import Builtin.Reflection
-        open import Tactic.Reflection
-{-
-        helper-type : Type
-        helper-type =
-          pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-          (abs "_"
-           (pi (arg (arg-info hidden relevant) (var 0 []))
-            (abs "_"
-             (pi (arg (arg-info hidden relevant) (var 1 []))
-              (abs "_"
-               (pi
-                (arg (arg-info visible irrelevant)
-                 (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-                (abs "_"
-                 (pi (arg (arg-info visible relevant) (var 3 []))
-                  (abs "_"
-                   (pi
-                    (arg (arg-info visible relevant)
-                     (def (quote _≡_)
-                      (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
-                       arg (arg-info hidden relevant) (var 4 []) ∷
-                       arg (arg-info visible relevant) (var 3 []) ∷
-                       arg (arg-info visible relevant) (var 3 []) ∷ [])))
-                    {-(abs "_"
-                     (pi
-                      (arg (arg-info visible relevant)
-                       (def (quote _≡_)
-                        (arg (arg-info visible relevant) (var 4 []) ∷
-                         arg (arg-info visible relevant) (var 1 []) ∷ [])))-}
-                      (abs "_"
-                       (pi (arg (arg-info visible relevant) (agda-sort (lit 0)))
-                        (abs "_" (agda-sort (lit 0))))))))))))))) -- ))
--}
-        helper-type : Type
-        helper-type =
-          pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-          (abs "_"
-           (pi (arg (arg-info hidden relevant) (var 0 []))
-            (abs "_"
-             (pi
-              (arg (arg-info visible irrelevant)
-               (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-              (abs "_" (agda-sort (lit 0)))))))
-
-        helper-patterns : List (Arg Pattern)
-        helper-patterns =
-          arg (arg-info hidden relevant) (var "_") ∷
-          arg (arg-info hidden relevant) (var "_") ∷ []
-
-        helper-term : Term
-        helper-term = def₀ (quote trustMe)
-
-        macro
-          helper : Tactic
-          helper hole = do
-            n ← freshName "helper" -|
-            catchTC (define (vArg n) helper-type [ clause helper-patterns helper-term ])
-                    (typeError ( strErr "error defining helper function" ∷ []))
-            ~|
-            unify hole helper-term
-
-  module M₅ where
-    open import Postlude
-    open import Tactic.Reflection.Reright
-
-    open import Builtin.Reflection
-    macro
-      round-trip : Term → Tactic
-      round-trip v hole = unify v hole
-
-    module M (A : Set) where
-      record R (a : A) : Set where
-        data D : Set where
-
-        fail : D → A → Set
-        fail d a = round-trip D
-
-  module M₆ where
-    open import Prelude
-    open import Tactic.Reflection
-    open import Tactic.Reflection.Quote
-
-    postulate
-      trustMe : ∀ {α} {A : Set α} → A
-
-    macro
-      trust-the-doppelganger : Tactic
-      trust-the-doppelganger hole = do
-        telescope ← reverse <$> getContext -|
-        goal ← inferType hole -|
-        nameₕ ← freshName "nameₕ" -|
-        (let helper-type = (telPi telescope goal)
-             helper-patterns = telePat telescope
-          in
-            catchTC
-              (define (vArg nameₕ) (telPi telescope goal) [ clause (telePat telescope) (def₀ (quote trustMe)) ])
-              (typeError (strErr "failed defining a function with type" ∷ termErr (telPi telescope goal) ∷
-                          strErr "\nhelper-type:" ∷ termErr helper-type ∷
-                          strErr "\n`helper-type:" ∷ termErr (` helper-type) ∷
-                          strErr "\nhelper-patterns:" ∷ termErr (` helper-patterns) ∷
-                          --strErr "\nhelper-term:" ∷ termErr helper-term ∷
-                          --strErr "\n`helper-term:" ∷ termErr (` helper-term) ∷
-                          []))
+      union : ∀ {s/x s/y} (x : Carrier s/x) → (y : Carrier s/y) → Dec (∃ λ s/z → ∃ λ (z : Carrier s/z) → (x ⊆ z) × (y ⊆ z) × ∀ {𝑘} → 𝑘 ∈ z → ((𝑘 ∈ x) ⊎ (𝑘 ∈ y)))
+      union {0} x y = yes $
+        _ ,
+        y ,
+        (λ {∈x → contradiction (∅-is-empty {∅ = x}) ∈x}) ,
+        (λ {∈y → ∈y , refl}) ,
+        (λ {∈y → inj₂ ∈y})
+      union {suc s/x₋ₐ} x y with choose x
+      union {suc s/x₋ₐ} x y | yes (a , a∈x) with pick a∈x | a ∉? y
+      ... | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | yes a∉y with put (get a∈x) a∉y
+      ... | y₊ₐ , a∈y₊ₐ , get/a∈y₊ₐ≡get/a∈x , y⊆y₊ₐ , y₊ₐ⊂y|≢a with union x₋ₐ y₊ₐ
+      ... | yes (s/z , z , x₋ₐ⊆z , y₊ₐ⊆z , z⊆x₋ₐ∪y₊ₐ) = yes $
+        _ ,
+        z ,
+        (λ {𝑘} ∈x → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+          (λ {
+            (yes 𝑘≡a) → helper2 𝑘≡a (sym get/a∈y₊ₐ≡get/a∈x) (y₊ₐ⊆z a∈y₊ₐ)
+          ; (no 𝑘≢a) → x⊂x₋ₐ|≢a 𝑘≢a ∈x ≫= x₋ₐ⊆z
+          })) ,
+        (λ {∈y → y⊆y₊ₐ ∈y ≫= y₊ₐ⊆z}) ,
+        (λ {𝑘} ∈z → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+          (λ {
+            (yes 𝑘≡a) → inj₁ (subst _ (sym 𝑘≡a) a∈x) ;
+            (no 𝑘≢a) → case z⊆x₋ₐ∪y₊ₐ ∈z of
+              (λ {
+                (inj₁ ∈x₋ₐ) → inj₁ $ proj₁ (x₋ₐ⊆x ∈x₋ₐ) ;
+                (inj₂ ∈y₊ₐ) → inj₂ $ proj₁ (y₊ₐ⊂y|≢a 𝑘≢a ∈y₊ₐ)
+               })
+          })
         )
-          ~|
-        unify hole (def nameₕ (teleArgs telescope))
-
-    module _ (A : Set) where
-      record R (P : A) : Set where
-      --module _ (P : A) where
-        fails : Set
-        fails = {!!} -- trust-the-doppelganger -- failed defining a function with type {A₁ : Set} {z : A₁} .(r : R z) → Set
-
-  module M₇ (A : Set) where
-    open import Postlude
-    open import Tactic.Reflection
-
-    postulate
-      trustMe : ∀ {α} {A : Set α} → A
-
-    helper-type : Name → Type
-    helper-type n =
-      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-      (abs "_"
-       (pi (arg (arg-info hidden relevant) (var 0 []))
-        (abs "_"
-         (pi
-          (arg (arg-info visible irrelevant)
-           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-          (abs "_" (agda-sort (lit 0)))))))
-
-    helper-patterns : List (Arg Pattern)
-    helper-patterns =
-      arg (arg-info hidden relevant) (var "_") ∷
-      arg (arg-info hidden relevant) (var "_") ∷ []
-
-    helper-term : Term
-    helper-term = def₀ (quote trustMe)
-
-    macro
-      helper : Name → Tactic
-      helper nam hole = do
-        n ← freshName "helper" -|
-        catchTC (define (vArg n) (helper-type nam) [ clause helper-patterns helper-term ])
-                (typeError ( strErr "error defining helper function" ∷ []))
-        ~|
-        unify hole helper-term
-
-    record R (a : Set) : Set where
-      err : Set
-      err = {!!} -- helper (quote R)
-
-  module M₇' (A : Set) where
-    open import Postlude
-    open import Tactic.Reflection
-
-    postulate
-      trustMe : ∀ {α} {A : Set α} → A
-
-    helper-type : Name → Type
-    helper-type n =
-      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-      (abs "_"
-       (pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-        (abs "_"
-         (pi
-          (arg (arg-info visible irrelevant)
-           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-          (abs "_" (agda-sort (lit 0)))))))
-    {-
-      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-      (abs "_"
-       (pi (arg (arg-info hidden relevant) (var 0 []))
-        (abs "_"
-         (pi
-          (arg (arg-info visible irrelevant)
-           (def n (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-          (abs "_" (agda-sort (lit 0)))))))
-    -}
-
-    helper-patterns : List (Arg Pattern)
-    helper-patterns =
-      arg (arg-info hidden relevant) (var "_") ∷
-      arg (arg-info hidden relevant) (var "_") ∷ []
-
-    helper-term : Term
-    helper-term = def₀ (quote trustMe)
-
-    macro
-      helper : Name → Tactic
-      helper nam hole = do
-        n ← freshName "helper" -|
-        catchTC (define (vArg n) (helper-type nam) [ clause helper-patterns helper-term ])
-                (typeError ( strErr "error defining helper function" ∷ []))
-        ~|
-        unify hole helper-term
-
-    record R-succeeds (a : Set) : Set where
-      test : Set
-      test = helper (quote R-succeeds)
-
-    record R-fails (a : A) : Set where
-      test : Set
-      test = {!!} -- helper (quote R)
--- see M₉
-
-  module M₈ where
-    open import Prelude
-    open import Tactic.Reflection
-
-    postulate
-      trustMe : ∀ {α} {A : Set α} → A
-
-    macro
-      trust-the-doppelganger : Tactic
-      trust-the-doppelganger hole = do
-        telescope ← reverse <$> getContext -|
-        goal ← inferType hole -|
-        nameₕ ← freshName "nameₕ" -|
-        catchTC
-          (define (vArg nameₕ) (telPi telescope goal) [ clause (telePat telescope) (def₀ (quote trustMe)) ])
-          (typeError (strErr "failed defining a function with type" ∷ termErr (telPi telescope goal) ∷ []))
-          ~|
-        unify hole (def nameₕ (teleArgs telescope))
-
-    module NM₀ where
-      postulate
-        P : Set
-
-      no-param-succeeds : P
-      no-param-succeeds = trust-the-doppelganger
-
-    module NM₁ (A : Set) where
-      postulate
-        P : Set
-
-      inside-M₁-fails : P
-      inside-M₁-fails = trust-the-doppelganger -- failed defining a function with type (A₁ : Set) → P A₁
-
-    outside-M₁-succeeds : (A : Set) → NM₁.P A
-    outside-M₁-succeeds = trust-the-doppelganger
-
-  module M₉ where
-    open import Prelude
-    open import Tactic.Reflection
-
-    helper-type : Name → Type → Type
-    helper-type record-name record-parameter-type =
-      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-      (abs "_"
-       (pi (arg (arg-info hidden relevant) record-parameter-type)
-        (abs "_"
-         (pi
-          (arg (arg-info visible irrelevant)
-           (def record-name (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-          (abs "_" (agda-sort (lit 0)))))))
-
-    helper-patterns : List (Arg Pattern)
-    helper-patterns =
-      arg (arg-info hidden relevant) (var "_") ∷
-      arg (arg-info hidden relevant) (var "_") ∷ []
-
-    helper-term : Name → Term
-    helper-term solution-name = def₀ solution-name
-
-    helper-tactic : Name → Type → Name → Tactic
-    helper-tactic record-name record-parameter-type solution-name hole = do
-      n ← freshName "helper" -|
-      catchTC (define (vArg n)
-                      (helper-type record-name record-parameter-type)
-                      [ clause helper-patterns (helper-term solution-name) ])
-              (typeError ( strErr "error defining helper function" ∷ []))
-      ~|
-      unify hole (helper-term solution-name)
-
-    module _ (A : Set) where
-      postulate
-        trustMe : ∀ {α} {A : Set α} → A
-
-      record R-independent-succeeds (a : Set) : Set where
-        test : Set
-        test = unquote (helper-tactic (quote R-independent-succeeds)
-                                      (agda-sort (lit 0))
-                                      (quote trustMe))
-{-
-      record R-dependent-fails (a : A) : Set where
-        test : Set
-        test = unquote (helper-tactic (quote R-dependent-fails)
-                                      (var 0 [])
-                                      (quote trustMe))
--}
-{-
-/home/martin/Desktop/scratch/uses-postlude/Map.agda:68,19-35
-error defining helper function
-helper-type:
-{A₁ : Set} {z z₁ : A₁} .(r : R z₁) (z₂ : A₁) (z₃ : z ≡ z)
-(z₄ : z ≡ z₂) (A₂ : Set) →
-Set
-
-`helper-type:
-pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
-(abs "_"
- (pi (arg (arg-info hidden relevant) (var 0 []))
-  (abs "_"
-   (pi (arg (arg-info hidden relevant) (var 1 []))
-    (abs "_"
-     (pi
-      (arg (arg-info visible irrelevant)
-       (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ [])))
-      (abs "_"
-       (pi (arg (arg-info visible relevant) (var 3 []))
-        (abs "_"
-         (pi
-          (arg (arg-info visible relevant)
-           (def (quote _≡_)
-            (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
-             arg (arg-info hidden relevant) (var 4 []) ∷
-             arg (arg-info visible relevant) (var 3 []) ∷
-             arg (arg-info visible relevant) (var 3 []) ∷ [])))
-          (abs "_"
-           (pi
-            (arg (arg-info visible relevant)
-             (def (quote _≡_)
-              (arg (arg-info visible relevant) (var 4 []) ∷
-               arg (arg-info visible relevant) (var 1 []) ∷ [])))
-            (abs "_"
-             (pi (arg (arg-info visible relevant) (agda-sort (lit 0)))
-              (abs "_" (agda-sort (lit 0)))))))))))))))))
-
-helper-patterns:
-arg (arg-info hidden relevant) (var "_") ∷
-arg (arg-info hidden relevant) dot ∷
-arg (arg-info hidden relevant) (var "_") ∷
-arg (arg-info visible irrelevant) (var "_") ∷
-arg (arg-info visible relevant) (var "_") ∷
-arg (arg-info visible relevant) (var "_") ∷
-arg (arg-info visible relevant) (con (quote refl) []) ∷
-arg (arg-info visible relevant) (var "_") ∷ []
-
-helper-term: x≡x
-`helper-term: var 0 []
-gʳ:
-just (agda-sort (lit 0))
-Γʷ:
-just
-(arg (arg-info visible relevant)
- (def (quote _≡_)
-  (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
-   arg (arg-info hidden relevant) (var 4 []) ∷
-   arg (arg-info visible relevant) (var 3 []) ∷
-   arg (arg-info visible relevant) (var 3 []) ∷ []))
- ∷
- arg (arg-info visible relevant) (var 3 []) ∷
- arg (arg-info visible irrelevant)
- (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ []))
- ∷
- arg (arg-info hidden relevant) (var 1 []) ∷
- arg (arg-info hidden relevant) (var 0 []) ∷
- arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ [])
-
-𝐺ʷ: agda-sort (lit 0)
-l≡r: var 0 []
-A: var 4 []
-L: var 1 []
-R:
-var 1 []
-Γᶜ:
-arg (arg-info visible relevant)
-(def (quote _≡_)
- (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
-  arg (arg-info hidden relevant) (var 3 []) ∷
-  arg (arg-info visible relevant) (var 0 []) ∷
-  arg (arg-info visible relevant) (var 0 []) ∷ []))
-∷
-arg (arg-info visible relevant) (var 2 []) ∷
-arg (arg-info visible irrelevant)
-(def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ []))
-∷
-arg (arg-info hidden relevant) (var 0 []) ∷
-arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ []
-
-𝐺: agda-sort (lit 0)
-Γʷ/ᴬ
-just (arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ [])
-
-Γʷ/⁻ᴬ
-just
-(arg (arg-info visible relevant)
- (def (quote _≡_)
-  (arg (arg-info hidden relevant) (def (quote lzero) []) ∷
-   arg (arg-info hidden relevant) (var 4 []) ∷
-   arg (arg-info visible relevant) (var 0 []) ∷
-   arg (arg-info visible relevant) (var 0 []) ∷ []))
- ∷
- arg (arg-info visible relevant) (var 3 []) ∷
- arg (arg-info visible irrelevant)
- (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ []))
- ∷ arg (arg-info hidden relevant) (var 1 []) ∷ [])
-
-[iᶜ∣iᶜ∈FVᴬ] 4 ∷ []
-[iᶜ∣iᶜ∉FVᴬ] 0 ∷ 1 ∷ 2 ∷ 3 ∷ []
-[iʷ]
-0 ∷ 1 ∷ 2 ∷ 3 ∷ 5 ∷ []
-when checking that the expression
-unquote (reright (quoteTerm x≡x)) ? has type Set
--}
+      ... | no ¬unionx₋ₐy₊ₐ = no $
+        λ { (s/z , z , x⊆z , y⊆z , z⊆x∪y) →
+          contradiction
+            (
+              s/z ,
+              z ,
+              (λ {∈x₋ₐ → x₋ₐ⊆x ∈x₋ₐ ≫= λ ∈x → x⊆z ∈x}) ,
+              (λ {𝑘} ∈y₊ₐ → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+                (λ {
+                  (yes 𝑘≡a) → helper2 𝑘≡a get/a∈y₊ₐ≡get/a∈x (x⊆z a∈x)
+                ; (no 𝑘≢a) → y₊ₐ⊂y|≢a 𝑘≢a ∈y₊ₐ ≫= λ ∈y → y⊆z ∈y
+                })
+              ) ,
+              (λ {𝑘} ∈z → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+                (λ {
+                  (yes k≡a) → inj₂ (subst _ (sym k≡a) a∈y₊ₐ) ;
+                  (no k≢a) → case z⊆x∪y ∈z of
+                    (λ {
+                      (inj₁ ∈x) → inj₁ $ proj₁ (x⊂x₋ₐ|≢a k≢a ∈x) ;
+                      (inj₂ ∈y) → inj₂ $ proj₁ (y⊆y₊ₐ ∈y)
+                    })
+                })
+              )
+            )
+            ¬unionx₋ₐy₊ₐ
+        }
+      union {suc s/x₋ₐ} x y | yes (a , a∈x) | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | no a∈y with _≟_ {{isDecEquivalence/V a}} (get a∈x) (get a∈y)
+      ... | yes vxₐ≡vyₐ = case union x₋ₐ y of
+        (λ {
+          (yes (s/z , z , x₋ₐ⊆z , y⊆z , z⊆x₋ₐ∪y)) → yes $
+            _ ,
+            z ,
+            (λ {𝑘} 𝑘∈x → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+              (λ {
+                (yes 𝑘≡a) → helper2 𝑘≡a vxₐ≡vyₐ (y⊆z a∈y)
+              ; (no 𝑘≢a) → x⊂x₋ₐ|≢a 𝑘≢a 𝑘∈x ≫= x₋ₐ⊆z
+              })
+            ) ,
+            (λ {∈y → y⊆z ∈y}) ,
+            (λ {∈z → case z⊆x₋ₐ∪y ∈z of
+              (λ {
+                (inj₁ ∈x₋ₐ) → inj₁ $ proj₁ (x₋ₐ⊆x ∈x₋ₐ)
+              ; (inj₂ ∈y) → inj₂ ∈y
+              })
+            }) ;
+          (no ¬unionx₋ₐy) → no (λ { (s/z , z , x⊆z , y⊆z , z⊆x∪y) →
+            contradiction
+              (
+                _ ,
+                z ,
+                (λ {∈x₋ₐ → x₋ₐ⊆x ∈x₋ₐ ≫= λ 𝑘∈x₋ₐ → x⊆z 𝑘∈x₋ₐ}) ,
+                y⊆z ,
+                (λ {𝑘} ∈z → case z⊆x∪y ∈z of
+                  (λ {
+                    (inj₁ ∈x) → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
+                      (λ {
+                        (yes 𝑘≡a) → inj₂ (subst _ (sym 𝑘≡a) a∈y) ;
+                        (no 𝑘≢a) → inj₁ $ proj₁ $ x⊂x₋ₐ|≢a 𝑘≢a ∈x
+                      })
+                  ; (inj₂ ∈y) → inj₂ ∈y
+                  })
+                )
+              )
+              ¬unionx₋ₐy })
+        })
+      ... | no vx≢vy = no (λ { (s/z , z , x⊆z , y⊆z , z⊆x∪y) →
+        let get/a∈zX≡get/a∈zY = get-is-unique (proj₁ (x⊆z a∈x)) (proj₁ (y⊆z a∈y))
+            get/a∈x≡get/a∈zX = proj₂ (x⊆z a∈x)
+            get/a∈x≡get/a∈zY = proj₂ (y⊆z a∈y)
+        in contradiction (trans get/a∈x≡get/a∈zX
+                            (trans get/a∈zX≡get/a∈zY (sym get/a∈x≡get/a∈zY))) vx≢vy
+        })
+      union {suc s/x₋ₐ} x y | no ∉x = yes $
+        _ ,
+        y ,
+        (λ {𝑘} ∈x → contradiction (𝑘 , ∈x) ∉x) ,
+        (λ {∈y → ∈y , refl}) ,
+        (λ {∈y → inj₂ ∈y})
