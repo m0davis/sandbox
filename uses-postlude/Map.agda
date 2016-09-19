@@ -9,13 +9,13 @@ module Map where
              (Carrier : ℕ → Set 𝑲𝑽) {{isDecEquivalence/K : Eq K}} {{isDecEquivalence/V : (k : K) → Eq (V k)}} : Set 𝑲𝑽₁ where
       field
         ∅ : Carrier 0
-        _∉_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
-        ∅-is-empty : ∀ {𝑘} {∅ : Carrier 0} → 𝑘 ∉ ∅
+        _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
 
-      _∈_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
-      _∈_ k m = ¬ k ∉ m
+      _∉_ : ∀ {s} → K → Carrier s → Set 𝑲𝑽
+      _∉_ k m = ¬ k ∈ m
 
       field
+        ∅-is-empty : ∀ {𝑘} {∅ : Carrier 0} → 𝑘 ∉ ∅
         get : ∀ {k : K} {s} {m : Carrier s} → k ∈ m → V k
         get-is-unique : ∀ {k : K} {s} {m : Carrier s} → (k∈m¹ : k ∈ m) (k∈m² : k ∈ m) → get k∈m¹ ≡ get k∈m²
 
@@ -29,7 +29,7 @@ module Map where
 
       field
         put : ∀ {k₀ : K} (v₀ : V k₀) {s₁} {m₁ : Carrier s₁} → k₀ ∉ m₁ → ∃ λ (m₀ : Carrier (suc s₁)) → ∃ λ (k₀∈m₀ : k₀ ∈ m₀) → get k₀∈m₀ ≡ v₀ × m₁ ⊆ m₀ × m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀
-        _∉?_ : ∀ {s} → (k : K) (m : Carrier s) → Dec (k ∉ m)
+        _∈?_ : ∀ {s} → (k : K) (m : Carrier s) → Dec (k ∈ m)
         choose : ∀ {s} → (m : Carrier s) → Dec (∃ λ k → k ∈ m)
         pick : ∀ {k₀ : K} {s₁} {m₀ : Carrier (suc s₁)} → k₀ ∈ m₀ → ∃ λ (m₁ : Carrier s₁) → m₁ ⊆ m₀ × (m₀ ⊂ m₁ ∣ λ 𝑘 → 𝑘 ≢ k₀) × k₀ ∉ m₁
 
@@ -71,12 +71,12 @@ module Map where
       union {0} x y = yes $
         _ ,
         y ,
-        (λ {∈x → contradiction (∅-is-empty {∅ = x}) ∈x}) ,
+        (λ {∈x → contradiction ∈x (∅-is-empty {∅ = x})}) ,
         (λ {∈y → ∈y , refl}) ,
         (λ {∈y → inj₂ ∈y})
       union {suc s/x₋ₐ} x y with choose x
-      union {suc s/x₋ₐ} x y | yes (a , a∈x) with pick a∈x | a ∉? y
-      ... | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | yes a∉y with put (get a∈x) a∉y
+      union {suc s/x₋ₐ} x y | yes (a , a∈x) with pick a∈x | a ∈? y
+      ... | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | no a∉y with put (get a∈x) a∉y
       ... | y₊ₐ , a∈y₊ₐ , get/a∈y₊ₐ≡get/a∈x , y⊆y₊ₐ , y₊ₐ⊂y|≢a with union x₋ₐ y₊ₐ
       ... | yes (s/z , z , x₋ₐ⊆z , y₊ₐ⊆z , z⊆x₋ₐ∪y₊ₐ) = yes $
         _ ,
@@ -123,7 +123,7 @@ module Map where
             )
             ¬unionx₋ₐy₊ₐ
         }
-      union {suc s/x₋ₐ} x y | yes (a , a∈x) | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | no a∈y with _≟_ {{isDecEquivalence/V a}} (get a∈x) (get a∈y)
+      union {suc s/x₋ₐ} x y | yes (a , a∈x) | x₋ₐ , x₋ₐ⊆x , x⊂x₋ₐ|≢a , a∉x₋ₐ | yes a∈y with _≟_ {{isDecEquivalence/V a}} (get a∈x) (get a∈y)
       ... | yes vxₐ≡vyₐ = case union x₋ₐ y of
         (λ {
           (yes (s/z , z , x₋ₐ⊆z , y⊆z , z⊆x₋ₐ∪y)) → yes $

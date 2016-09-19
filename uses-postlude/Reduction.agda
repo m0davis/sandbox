@@ -28,12 +28,13 @@ module Reduction where
 
   open import Tactic.Reflection.Reright
 
+  -- _⋐_ →? Map
   reduce-PureFree-to-map : ∀
     {PAT EXP : Free List A}
     {PAT⋒EXP : PAT ⋒ EXP}
     (PAT⋐PAT⋒EXP : PAT ⋐ PAT⋒EXP)
     → Dec $ ∃ λ s → ∃ λ (binding : M s) → PAT⋐PAT⋒EXP ⋐⋒<Map binding × binding Map<⋐⋒ PAT⋐PAT⋒EXP
-  reduce-PureFree-to-map (Equal X≞Y) = yes (0 , ∅ , (λ ()) , (λ {a∈∅ → contradiction ∅-is-empty a∈∅}))
+  reduce-PureFree-to-map (Equal X≞Y) = yes (0 , ∅ , (λ ()) , (λ {a∈∅ → contradiction a∈∅ ∅-is-empty}))
   reduce-PureFree-to-map (PureFree x {N = N} g ns) =
     yes $
       1 ,
@@ -47,7 +48,7 @@ module Reduction where
                singleton a g ns ,
                let _ , a∈mₐ , get-a∈mₐ≡free-g-ns , _ = put {k₀ = a} (free g ns) {m₁ = ∅} ∅-is-empty in
                  trans (get-is-unique a∈binding' a∈mₐ) get-a∈mₐ≡free-g-ns
-        ; (no x≢a) → case pick a∈binding of (λ { (m0 , k∈m0→Σ , k≢a→k∈m1→Σ , a∉m0) → let s1 , s2 , s3 , s4 = put {k₀ = x} (free g ns) {m₁ = ∅} ∅-is-empty in contradiction ∅-is-empty (proj₁ (k≢a→k∈m1→Σ x≢a s2)) }) })
+        ; (no x≢a) → case pick a∈binding of (λ { (m0 , k∈m0→Σ , k≢a→k∈m1→Σ , a∉m0) → let s1 , s2 , s3 , s4 = put {k₀ = x} (free g ns) {m₁ = ∅} ∅-is-empty in contradiction (proj₁ (k≢a→k∈m1→Σ x≢a s2)) ∅-is-empty }) })
       })
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) with reduce-PureFree-to-map PAT⋐PAT⋒EXP | reduce-PureFree-to-map PAT⋐PAT⋒EXP₁
   reduce-PureFree-to-map (Free∷Free∷ notequal PAT⋐PAT⋒EXP PAT⋐PAT⋒EXP₁) | yes (_ , m1 , _) | yes (_ , m2 , _) with union m1 m2
@@ -76,8 +77,8 @@ module Reduction where
       {R : free f ms ⋐ rest}
       (∈f→Σ[∈m1,get∈f≡get⋆] : ∀ {a} (∈f : a ∈pf F) → Σ (a ∈ m1) (λ ∈m1 → getpf ∈f ≡ get ∈m1))
       (∈r→Σ[∈m2,get∈f≡get⋆] : ∀ {a} (∈r : a ∈pf R) → Σ (a ∈ m2) (λ ∈m2 → getpf ∈r ≡ get ∈m2))
-      (∈m1→Σ[∈m3,get∈m1≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∉ m1 → ⊥) → Σ (𝑘 ∉ m3 → ⊥) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
-      (∈m2→Σ[∈m3,get∈m2≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∉ m2 → ⊥) → Σ (𝑘 ∉ m3 → ⊥) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
+      (∈m1→Σ[∈m3,get∈m1≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∈ m1) → Σ (𝑘 ∈ m3) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
+      (∈m2→Σ[∈m3,get∈m2≡get⋆] : ∀ {𝑘 : A} (𝑘∈m₁ : 𝑘 ∈ m2) → Σ (𝑘 ∈ m3) (λ 𝑘∈m₀ → get 𝑘∈m₁ ≡ get 𝑘∈m₀))
       → (∈fr : a ∈pf Free∷Free∷ notequal F R) → Σ (a ∈ m3) (λ a∈m3 → getpf ∈fr ≡ get a∈m3)
     helper→ ∈f→Σ[∈m1,get∈f≡get⋆] _ ∈m1→Σ[∈m3,get∈m1≡get⋆] _ (descend1 a ∈fr) = {!∈f→Σ[∈m1,get∈f≡get⋆] ∈fr!}
     helper→ _ ∈r→Σ[∈m2,get∈f≡get⋆] _ ∈m2→Σ[∈m3,get∈m2≡get⋆] (descend2 a ∈fr) = {!!}
@@ -151,3 +152,9 @@ module Reduction where
               (a∈binding : a ∈ binding) →
               a ∉ reduced →
               ¬ ∃ λ (a∈pfdiff2 : a ∈pf diff2) → getpf a∈pfdiff2 ≡ get a∈binding
+
+  substitute' : ∀ {s} → M s → Free List A → Free List A
+  substitute' m (pure x) with x ∈? m
+  ... | yes x∈m = get x∈m
+  ... | no x∉m = pure x
+  substitute' m (free x xs) = free (λ a → substitute' m (x a)) xs

@@ -88,6 +88,34 @@ module Free where
                    free f ms ⋐ rest →
                    free f (m ∷ ms) ⋐ Free∷Free∷ notequal first rest
 
+    match : ∀ {X : Free List A} {Y : Free List A} (X⋒Y : X ⋒ Y) → Dec (X ⋐ X⋒Y)
+    match (Equal X≞Y) = yes $ Equal X≞Y
+    match (Pure x₂) = yes $ {!Equal!}
+    match (PureFree x g ns) = yes $ PureFree x g ns
+    match (FreePure f ms y) = no (λ ())
+    match (Free∷Free[] f ms g) = {!!}
+    match (Free[]Free∷ f g ns) = {!!}
+    match (Free∷Free∷ x₁ X⋒Y X⋒Y₁) = {!!}
+
+    data _⋐'_ : (X : Free List A) {Y : Free List A} (X⋒Y : X ⋒ Y) → Set (sucₗ α) where
+
+      Equal : ∀ {X : Free List A} {Y : Free List A} (X≞Y : X ≞ Y) → X ⋐' Equal X≞Y
+      PureFree : (x : A) → ∀ {N : Set α} → (g : N → Free List A) → (ns : List N) → pure x ⋐' PureFree x g ns
+      Free∷Free∷ : {M N : Set α} →
+                   {f : M → Free List A} →
+                   {m : M} {ms : List M} →
+                   {g : N → Free List A} →
+                   {n : N} {ns : List N} →
+                   (notequal : ¬ free f (m ∷ ms) ≞ free g (n ∷ ns)) →
+                   {first : f m ⋒ g n} →
+                   {rest : free f ms ⋒ free g ns} →
+                   f m ⋐' first →
+                   free f ms ⋐' rest →
+                   free f (m ∷ ms) ⋐' Free∷Free∷ notequal first rest
+
+    match' : ∀ {X : Free List A} {Y : Free List A} (X⋒Y : X ⋒ Y) → Dec (X ⋐' X⋒Y)
+    match' = ?
+
     data _∈pf_ : (a : A) → {X : Free List A} {Y : Free List A} {X⋒Y : X ⋒ Y} (X⋐X⋒Y : X ⋐ X⋒Y) → Set (sucₗ α) where
       singleton : (a : A) → ∀ {N : Set α} → (g : N → Free List A) → (ns : List N)→ a ∈pf PureFree a g ns
       descend1 : ∀ (a : A) → {M N : Set α} →
