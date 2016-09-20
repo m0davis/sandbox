@@ -4,6 +4,16 @@ module AgdaIssue2189 where
     open import Postlude
     open import Tactic.Reflection.Reright
 
+    open import Tactic.Reflection.Quote
+    open import Builtin.Reflection
+
+    macro
+      showContext : Tactic
+      showContext hole =
+        Γ ← getContext -|
+        typeError [ termErr (` Γ) ]
+
+
     module M₁' {𝑲 𝑽} (let 𝑲𝑽 = 𝑲 ⊔ₗ 𝑽 ; 𝑲𝑽₁ = sucₗ 𝑲𝑽) where
       record R
                {K : Set 𝑲}
@@ -27,7 +37,7 @@ module AgdaIssue2189 where
           {!!} ,
           (λ {𝑘} ∈x → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
             (λ {
-              (yes 𝑘≡a) → {!!} -- reright 𝑘≡a {!!}
+              (yes 𝑘≡a) → {!showContext!} -- reright 𝑘≡a {!!}
             ; (no 𝑘≢a) → {!!}
             }))
         err₁ x | no ∉x = {!!}
@@ -336,6 +346,8 @@ module AgdaIssue2189 where
   module M₉ where
     open import Prelude
     open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+    open import Builtin.Reflection
 
     helper-type : Name → Type → Type
     helper-type record-name record-parameter-type =
@@ -359,10 +371,13 @@ module AgdaIssue2189 where
     helper-tactic : Name → Type → Name → Tactic
     helper-tactic record-name record-parameter-type solution-name hole = do
       n ← freshName "helper" -|
+      Γ ← getContext -|
       catchTC (define (vArg n)
                       (helper-type record-name record-parameter-type)
                       [ clause helper-patterns (helper-term solution-name) ])
-              (typeError ( strErr "error defining helper function" ∷ []))
+              (typeError ( strErr "error defining helper function" ∷
+                           termErr (` Γ) ∷
+                           []))
       ~|
       unify hole (helper-term solution-name)
 
@@ -381,6 +396,179 @@ module AgdaIssue2189 where
         test = unquote (helper-tactic (quote R-dependent-fails)
                                       (var 0 [])
                                       (quote trustMe))
+               {- Γ =
+               arg (arg-info visible irrelevant)
+               (def (quote R-dependent-fails)
+                (arg (arg-info visible relevant) (var 0 []) ∷ []))
+               ∷
+               arg (arg-info hidden relevant) (var 0 []) ∷
+               arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ []
+               -}
+-}
+
+
+  module M₁₀ where
+    open import Prelude
+    open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+    open import Builtin.Reflection
+
+    helper-type : Name → Type → Type
+    helper-type record-name record-parameter-type =
+      {-
+      pi (arg (arg-info hidden relevant) (agda-sort (lit 0)))
+      (abs "_"
+      -}
+       (pi (arg (arg-info hidden relevant) record-parameter-type)
+        (abs "_"
+         (pi
+          (arg (arg-info visible irrelevant)
+           (def record-name (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+          (abs "_" (agda-sort (lit 0)))))) -- )
+
+    helper-patterns : List (Arg Pattern)
+    helper-patterns =
+      -- arg (arg-info hidden relevant) (var "_") ∷
+      arg (arg-info hidden relevant) (var "_") ∷ []
+
+    helper-term : Name → Term
+    helper-term solution-name = def₀ solution-name
+
+    helper-tactic : Name → Type → Name → Tactic
+    helper-tactic record-name record-parameter-type solution-name hole = do
+      n ← freshName "helper" -|
+      Γ ← getContext -|
+--      catchTC
+        (define (vArg n)
+                (helper-type record-name record-parameter-type)
+                [ clause helper-patterns (helper-term solution-name) ])
+{-
+        (typeError ( strErr "error defining helper function" ∷
+                     termErr (` Γ) ∷
+                     []))
+-}
+      ~|
+      unify hole (helper-term solution-name)
+
+    module _ (A : Set) where
+      postulate
+        trustMe : ∀ {α} {A : Set α} → A
+
+      record R-independent-succeeds (a : Set) : Set where
+        test : Set
+        test = unquote (helper-tactic (quote R-independent-succeeds)
+                                      (agda-sort (lit 0))
+                                      (quote trustMe))
+{-
+      record R-dependent-fails (a : A) : Set where
+        test : Set
+        test = unquote (helper-tactic (quote R-dependent-fails)
+                                      (var 1 [])
+                                      (quote trustMe))
+               {- Γ =
+               arg (arg-info visible irrelevant)
+               (def (quote R-dependent-fails)
+                (arg (arg-info visible relevant) (var 0 []) ∷ []))
+               ∷
+               arg (arg-info hidden relevant) (var 0 []) ∷
+               arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ []
+               -}
+-}
+
+
+  module M₁₁ where
+    open import Prelude
+    open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+    open import Builtin.Reflection
+
+    postulate trustMe : ∀ {α} {A : Set α} → A
+
+    module _ (A : Set) where
+      postulate R : A → Set
+
+      macro
+        helper : Tactic
+        helper hole = do
+          n ← freshName "helper" -|
+          define (vArg n)
+                 (pi (arg (arg-info visible relevant)
+                          (var 0 []))
+                     (abs "_"
+                          (pi (arg (arg-info visible irrelevant)
+                                   (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ [])))
+                              (abs "_" (agda-sort (lit 0))))))
+                 [ clause
+                     (arg (arg-info visible relevant) (var "_") ∷ [])
+                     (def (quote trustMe) [])
+                 ]
+          ~|
+          unify hole (def n [])
+
+      doppelganger : (x : A) → R x → Set
+      doppelganger = trustMe
+
+      test : (x : A) → R x → Set
+      test = helper
+
+  module M₁₂ where
+    open import Prelude
+    open import Tactic.Reflection
+    open import Tactic.Reflection.Quote
+    open import Builtin.Reflection
+
+    macro
+      showContext : Tactic
+      showContext hole =
+        Γ ← getContext -|
+        typeError [ termErr (` Γ) ]
+
+    module M (A : Set) where
+      test-inside : Set
+      test-inside = {!!} -- showContext -- arg (arg-info visible relevant) (agda-sort (lit 0)) ∷ []
+
+      record R (a : A) : Set where
+        inductive
+
+        test-inside-R₁ : Set
+        test-inside-R₁ = {!showContext!}
+        {-
+        arg (arg-info visible irrelevant)
+        (def (quote R) (arg (arg-info visible relevant) (var 0 []) ∷ []))
+        ∷
+        arg (arg-info hidden relevant) (var 0 []) ∷
+        arg (arg-info hidden relevant) (agda-sort (lit 0)) ∷ []
+        -}
+
+        test-inside-R₂ : A → Set
+        test-inside-R₂ = {!showContext!}
+{-
+        field
+          f : R a → R a
+
+        test-f : R a → R a
+        test-f = ?
+-}
+
+    test-outside₁ : (A : Set) → Set
+    test-outside₁ a = {!showContext!} -- arg (arg-info visible relevant) (agda-sort (lit 0)) ∷ []
+
+    test-outside₂ : (A : Set) → Set
+    test-outside₂ = {!showContext!} -- []
+
+{-
+  getContext returns all the variables bound where the macro is applied, not distinguishing between those bound by a module and those by the function currently being defined. E.g. the getContext of the following examples are equivalent:
+
+  example₁ : Set → Set
+  example₁ x = ?
+
+  module _ (A : Set) where
+    example₂ = ?
+
+  My current problem requires me to know how many of the context variables are defined by enclosing modules, so  I'd like to be able to distinguish the two cases in a macro and can think of at least two possible solutions.
+
+  Solution 1: enhance reflection to E.g.
+    getDistinguishedContext : TC (
 -}
 {-
 /home/martin/Desktop/scratch/uses-postlude/Map.agda:68,19-35
