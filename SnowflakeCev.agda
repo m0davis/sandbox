@@ -8,17 +8,17 @@ module SnowflakeCev where
           ; case_of_
           ; ⊥-elim
           ; refl
-          ; ∃
+--          ; ∃
           ; _≤_
           ; id
           )
 
   open import Relation.Binary.PropositionalEquality using (subst)
-  open import Tactic.Nat (quote _≤_) (quote id) (quote id)
+  open import Tactic.Nat.Generic (quote _≤_) (quote id) (quote id)
   open import Agda.Builtin.Nat using (suc; _+_) renaming (Nat to ℕ)
 
   _≢_ : ∀ {a} {A : Set a} → A → A → Set a
-  A ≢ B = ¬ A ≡ B
+  A ≢ B = ¬ (A ≡ B)
 
   data 𝕍 {𝑨} (𝐴 : Set 𝑨) : ℕ → Set 𝑨
   data _∉_ {𝑨} {𝐴 : Set 𝑨} (x : 𝐴) : ∀ {n} → 𝕍 𝐴 n → Set 𝑨
