@@ -1,3 +1,4 @@
+--{-# OPTIONS -v profile:10 #-}
 open import Agda.Builtin.Reflection
 module Map where
   open import Postlude
@@ -84,7 +85,12 @@ module Map where
         z ,
         (λ {𝑘} ∈x → case _≟_ {{isDecEquivalence/K}} 𝑘 a of
           (λ {
-            (yes 𝑘≡a) → reright-debug 𝑘≡a ? -- helper2 𝑘≡a (sym get/a∈y₊ₐ≡get/a∈x) (y₊ₐ⊆z a∈y₊ₐ)
+            (yes 𝑘≡a) → reright-debug 𝑘≡a {!!} -- helper2 𝑘≡a (sym get/a∈y₊ₐ≡get/a∈x) (y₊ₐ⊆z a∈y₊ₐ)
+{-
+        helper2 refl get/a∈y≡get/a∈x (a∈z , get/a∈x≡get/z) =
+          a∈z ,
+          trans (get-is-unique _ _) (trans get/a∈y≡get/a∈x get/a∈x≡get/z)
+-}
           ; (no 𝑘≢a) → x⊂x₋ₐ|≢a 𝑘≢a ∈x ≫= x₋ₐ⊆z
           })) ,
         (λ {∈y → y⊆y₊ₐ ∈y ≫= y₊ₐ⊆z}) ,

@@ -1,6 +1,21 @@
 --{-# OPTIONS --show-implicit #-}
 module Scratch where
 
+module Maybes where
+  open import Prelude
+
+  postulate
+    P : Set
+    search : Maybe P
+
+  unMaybe : ∀ {a} {A : Set a} (m : Maybe A) {_ : IsJust m} -> A
+  unMaybe nothing {}
+  unMaybe (just x) {_} = x
+
+  proof : P
+  proof = unMaybe search
+
+{-
 module Issue1555 where
   open import Agda.Builtin.Unit
 
@@ -19,6 +34,7 @@ module Issue1555 where
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     : ⊤} → ⊤ → ⊤
   test tt = tt
+-}
 
 -- module ContentedList where
 --   open import Prelude
