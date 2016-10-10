@@ -31,6 +31,7 @@ infixr 2 _×_
 -- Definition
 
 record Σ {a b} (A : Set a) (B : A → Set b) : Set (a ⊔ₗ b) where
+  no-eta-equality
   constructor _,_
   field
     proj₁ : A
