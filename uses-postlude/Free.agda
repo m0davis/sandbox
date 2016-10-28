@@ -1,6 +1,34 @@
 module Free where
   open import Postlude
 
+  {-
+    pattern: (?P -> ?Q)
+    expression: (A & B) -> C
+
+    pattern =
+      free
+        λ x where
+          0 → pure "->"
+          1 → pure "?P"
+          2 → pure "?Q"
+        [0 , 1 , 2]
+
+    expression =
+      free
+        λ x where
+          0 → pure "->"
+          1 → free
+                λ x where
+                  0 → pure "&"
+                  1 → pure "A"
+                  2 → pure "B"
+                [0 , 1 , 2]
+          2 → pure "C"
+
+    pattern ⋒ expression =
+      Free∷Free∷
+  -}
+
   data Free {𝑨} (F : Set 𝑨 → Set 𝑨) (A : Set 𝑨) : Set (sucₗ 𝑨) where
     pure : A → Free F A
     free : ∀ {𝑎 : Set 𝑨} → (𝑎 → Free F A) → F 𝑎 → Free F A

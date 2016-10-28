@@ -16,6 +16,8 @@ module Reduction where
   open import Map
   postulate
     m : Map V M {{isDecEquivalence/A}} {{isDecEquivalence/V}}
+    ∅ : M 0
+
 
   open FreeComparison {{isDecEquivalence/A}}
   open Map.Map m
@@ -26,7 +28,7 @@ module Reduction where
   _Map<⋐⋒_ : ∀ {s} (binding : M s) {PAT EXP : Free List A} {PAT⋒EXP : PAT ⋒ EXP} (PAT⋐PAT⋒EXP : PAT ⋐ PAT⋒EXP) → Set₁
   binding Map<⋐⋒ PAT⋐PAT⋒EXP = ∀ {a} (a∈binding : a ∈ binding) → ∃ λ (a∈pfPAT⋐PAT⋒EXP : a ∈pf PAT⋐PAT⋒EXP) → get a∈binding ≡ getpf a∈pfPAT⋐PAT⋒EXP
 
-  open import Tactic.Reflection.Reright
+  open import Tactic.Reright
 
   -- _⋐_ →? Map
   reduce-PureFree-to-map : ∀
