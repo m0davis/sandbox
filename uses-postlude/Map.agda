@@ -7,7 +7,7 @@ module Map {𝑲} {K : Set 𝑲}     {{isDecEquivalence/K : Eq K}}
            (Carrier : ℕ → Set 𝑲𝑽)
        where
 
-open import Tactic.Reflection.Reright
+open import Tactic.Reright
 
 record Map : Set 𝑲𝑽₁ where
   field
@@ -36,25 +36,6 @@ record Map : Set 𝑲𝑽₁ where
     pick : ∀ {k₁ : K} {s₀} {m₁ : Carrier (suc s₀)} → k₁ ∈ m₁ → ∃ λ (m₀ : Carrier s₀) → m₀ ⊆ m₁ × (m₁ ⊂ m₀ ∣ (_≢ k₁)) × k₁ ∉ m₀
 
   private
-    helper2 : ∀ {𝑘}
-                {a}
-                {s/x}
-                {s/y}
-                {s/z}
-                {x : Carrier s/x}
-                {y : Carrier s/y}
-                {z : Carrier s/z}
-                {a∈x : a ∈ x}
-                {a∈y : a ∈ y}
-                (𝑘≡a : 𝑘 ≡ a)
-                {𝑘∈y : 𝑘 ∈ y}
-                (get/a∈y≡get/a∈x : get a∈y ≡ get a∈x)
-                (Σa∈z[get/a∈x≡get/a∈z] : Σ (a ∈ z) (λ a∈z → get a∈x ≡ get a∈z))
-              → Σ (𝑘 ∈ z) (λ 𝑘∈z → get 𝑘∈y ≡ get 𝑘∈z)
-    helper2 refl get/a∈y≡get/a∈x (a∈z , get/a∈x≡get/z) =
-      a∈z ,
-      (get-is-unique ⟨≡⟩ get/a∈y≡get/a∈x ⟨≡⟩ get/a∈x≡get/z)
-
     infixl 10 _≫=_
     _≫=_ : ∀ {𝑘}
               {s/x}
@@ -143,7 +124,11 @@ record Map : Set 𝑲𝑽₁ where
           ; ◮⊆▲ = -- ◮₊ₐ ⊆ ▲
             λ {𝑘} 𝑘∈◮₊ₐ →
             case 𝑘 ≟ a of λ
-            { (yes 𝑘≡a) → helper2 𝑘≡a ◮₊ₐᵃ=◭ᵃ (◭⊆▲ a∈◭)
+            { (yes 𝑘≡a) →
+              reright 𝑘≡a λ _ →
+              let (a∈▲ , ◮ᵃ=▲ᵃ) = ◭⊆▲ a∈◭ in
+              a∈▲ ,
+              (get-is-unique ⟨≡⟩ ◮₊ₐᵃ=◭ᵃ ⟨≡⟩ ◮ᵃ=▲ᵃ)
             ; (no 𝑘≢a) → ◮₊ₐ⊂◮|≢a 𝑘≢a 𝑘∈◮₊ₐ ≫= ◮⊆▲ }
           ; ▲⊆◭∪◮ = -- ▲ ⊆ ◭₋ₐ ∪ ◮₊ₐ
             λ {𝑘} 𝑘∈▲ →
