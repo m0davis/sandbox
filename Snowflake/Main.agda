@@ -1,6 +1,7 @@
 module Snowflake.Main where
 
 open import Snowflake.Prelude
+open import Prelude.Nat
 
 test₀ : 𝕃→𝑳 (reorder [abcd] (0 ∷ₗ 0 ∷ₗ 0 ∷ₗ 0 ∷ₗ ∅)) ≡ 𝕃→𝑳 [abcd]
 test₀ = refl

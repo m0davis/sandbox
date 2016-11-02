@@ -275,16 +275,51 @@ swapTop-ex = refl
 open import Agda.Builtin.Nat using (_<_)
 open import Agda.Builtin.Bool
 
+open import Prelude.Memoization
+open import Prelude.Nat
+open import Prelude.Product
+open import Prelude.Function
+
+mutual
+  𝕃μ : ∀ {𝑨} {𝐴 : Set 𝑨} → (l : 𝕃 𝐴) → Mem l
+  𝕃μ ∅ = putμ refl
+  𝕃μ (✓ x) with ∉μ x
+  ... | (mx , x-refl) rewrite sym x-refl = ✓ mx , refl
+
+  ∉μ : ∀ {𝑨} {𝐴 : Set 𝑨} {x : 𝐴} → {l : 𝕃 𝐴} → (x∉l : x ∉ l) → Mem x∉l
+  ∉μ ∅ = putμ refl
+  ∉μ (● x₂ x₃ x₁) with ∉μ x₃ | ∉μ x₁
+  ... | (mx₃ , x₃-refl) | (mx₁ , x₁-refl) rewrite sym x₃-refl | sym x₁-refl = ● x₂ mx₃ mx₁ , refl
+
+record Applyable {a} (A : Set a) : Set a where
+  field
+    mem : (x : A) → Mem x
+
+open Applyable ⦃ ... ⦄
+
+instance
+  Applyable𝕃 : ∀ {𝑨} {𝐴 : Set 𝑨} → Applyable (𝕃 𝐴)
+  Applyable𝕃 = record { mem = 𝕃μ }
+
+infixr 0 _!$_
+_!$_ : ∀ {a} {A : Set a} {b} {B : A → Set b} → ((x : A) → B x) → ⦃ _ : Applyable A ⦄ → (x : A) → B x
+f  !$ x with mem x
+... | (x' , x-refl) rewrite (sym x-refl) = f x'
+
+
 {-# TERMINATING #-}
 rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 rotateDownBy n ∅ = ∅
 rotateDownBy 0 x = x
+rotateDownBy (suc n) x = --rotateDownBy n (rotateDown x)
+  rotateDownBy n !$ rotateDown x
+{-
 rotateDownBy (suc n) x with length x < suc (suc n)
 ... | true = rotateDownBy (suc n - length x) x
 ... | false = x |⋙ rotateDown ⋙ rotateDownBy n
---rotateDownBy (suc n) x = x |⋙ rotateDown ⋙ rotateDownBy n
+-}
 
-rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 2 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
+rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 46 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateDownBy-ex = refl
 
 -- raiseFromBottom 3 "012345X789" = "01234X5789"
@@ -294,6 +329,7 @@ raiseFromBottom : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 �
 raiseFromBottom _ ∅ = ∅
 raiseFromBottom _ [ x₀ ] = [ x₀ ]
 raiseFromBottom n xs = xs |⋙ rotateDownBy (2 + n) ⋙ swapTop ⋙ rotateDownBy (length xs - 2 - n)
+  --rotateDownBy (length xs - 2 - n) $ 𝕃μ ! swapTop $ 𝕃μ ! rotateDownBy (2 + n) xs
 
 raiseFromBottom-ex : 𝕃→𝑳 (raiseFromBottom 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromBottom-ex = refl
@@ -305,6 +341,7 @@ raiseBottomBy _ ∅ = ∅
 raiseBottomBy _ [ x₀ ] = [ x₀ ]
 raiseBottomBy 0 xs = xs
 raiseBottomBy (suc n) xs = xs |⋙ raiseBottomBy n ⋙ raiseFromBottom n
+  --raiseFromBottom n $ 𝕃μ ! raiseBottomBy n $ 𝕃μ ! xs
 
 raiseBottomBy-ex : 𝕃→𝑳 (raiseBottomBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
 raiseBottomBy-ex = refl
@@ -319,6 +356,7 @@ raiseFromTopBy n m xs with length xs
 ... | l with suc n ≟ l
 ... | yes _ = xs |⋙ raiseBottomBy m
 ... | no _  = xs |⋙ rotateDownBy (l - (suc n)) ⋙ raiseBottomBy m ⋙ rotateDownBy (suc n)
+  --rotateDownBy (suc n) $ 𝕃μ ! raiseBottomBy m $ 𝕃μ ! rotateDownBy (l - (suc n)) xs
 
 raiseFromTopBy-ex : 𝕃→𝑳 (raiseFromTopBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromTopBy-ex = refl
@@ -329,85 +367,86 @@ reorder xs perm = go 0 perm xs where
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
   go n (p₀ ∷ₗ ps) xs = go (suc n) ps (raiseFromTopBy (n + p₀) p₀ xs)
+    --go (suc n) ps $ 𝕃μ ! raiseFromTopBy (n + p₀) p₀ xs
 
-module M₁ where
-  data Fin : ℕ → Set where
-    zero : Fin 0
-    suc : ∀ {n} → Fin n → Fin (suc n)
+-- module M₁ where
+--   data Fin : ℕ → Set where
+--     zero : Fin 0
+--     suc : ∀ {n} → Fin n → Fin (suc n)
 
-  data PermutationList : ℕ → Set where
-    ∅ : PermutationList 0
-    _∷_ : ∀ {n} → Fin n → PermutationList n → PermutationList (suc n)
-  {-
-  invariantLength-init : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s
-    init : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀s : 𝕃 𝐴} (∅⊂x₀s : ∅⊂ x₀s) → 𝕃 𝐴
-  -}
+--   data PermutationList : ℕ → Set where
+--     ∅ : PermutationList 0
+--     _∷_ : ∀ {n} → Fin n → PermutationList n → PermutationList (suc n)
+--   {-
+--   invariantLength-init : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s
+--     init : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀s : 𝕃 𝐴} (∅⊂x₀s : ∅⊂ x₀s) → 𝕃 𝐴
+--   -}
 
-  invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
-  invariantLength-rotateDown {𝑨} {𝐴} ∅ = {!!}
-  invariantLength-rotateDown {𝑨} {𝐴} (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) = {!!}
-  {-
-  invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
-  invariantLength-rotateDown ∅ = refl
-  invariantLength-rotateDown [ x₀ ] = refl
-  invariantLength-rotateDown (x₀ ₀∷₁ x₁ ∷⟦ x₂s ⟧) = {!!}
-  -}
+--   invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
+--   invariantLength-rotateDown {𝑨} {𝐴} ∅ = {!!}
+--   invariantLength-rotateDown {𝑨} {𝐴} (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) = {!!}
+--   {-
+--   invariantLength-rotateDown : ∀ {𝑨} {𝐴 : Set 𝑨} (xs : 𝕃 𝐴) → length (rotateDown xs) ≡ length xs
+--   invariantLength-rotateDown ∅ = refl
+--   invariantLength-rotateDown [ x₀ ] = refl
+--   invariantLength-rotateDown (x₀ ₀∷₁ x₁ ∷⟦ x₂s ⟧) = {!!}
+--   -}
 
-  {-# TERMINATING #-}
-  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (length xs) → 𝕃 𝐴
-  rotateDownBy' ∅ zero = ∅
-  rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc {n = n} n') = rotateDownBy' (rotateDown (✓ x₀∉x₁s)) (subst Fin (sym {!!}) n') -- (subst Fin (sym {!invariantLength-rotateDown!}) n) -- (subst {!!} (sym {!!}) {!!})
+--   {-# TERMINATING #-}
+--   rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (length xs) → 𝕃 𝐴
+--   rotateDownBy' ∅ zero = ∅
+--   rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc {n = n} n') = rotateDownBy' (rotateDown (✓ x₀∉x₁s)) (subst Fin (sym {!!}) n') -- (subst Fin (sym {!invariantLength-rotateDown!}) n) -- (subst {!!} (sym {!!}) {!!})
 
-  --rotateDownBy' n ∅ = ∅
-  --rotateDownBy' x zero = x
-  --rotateDownBy' x (suc n) = x |⋙ rotateDown ⋙ rotateDownBy' n
+--   --rotateDownBy' n ∅ = ∅
+--   --rotateDownBy' x zero = x
+--   --rotateDownBy' x (suc n) = x |⋙ rotateDown ⋙ rotateDownBy' n
 
-module M₂ where
-  data Fin : ℕ → Set where
-    zero : ∀ ..{n} → Fin (suc n)
-    suc  : ∀ ..{n} (i : Fin n) → Fin (suc n)
+-- module M₂ where
+--   data Fin : ℕ → Set where
+--     zero : ∀ ..{n} → Fin (suc n)
+--     suc  : ∀ ..{n} (i : Fin n) → Fin (suc n)
 
-  postulate
-    invariantLength : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s : x₀ ∉ x₁s) → suc (length x₁s) ≡ length (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s))
-    expandFin : ∀ {n} → Fin n → Fin (suc n)
+--   postulate
+--     invariantLength : ∀ {𝑨} {𝐴 : Set 𝑨} (x₀ : 𝐴) (x₁s : 𝕃 𝐴) (x₀∉x₁s : x₀ ∉ x₁s) → suc (length x₁s) ≡ length (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s))
+--     expandFin : ∀ {n} → Fin n → Fin (suc n)
 
-  {-# TERMINATING #-}
-  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (suc (length xs)) → 𝕃 𝐴
-  rotateDownBy' ∅ zero = ∅
-  rotateDownBy' ∅ (suc ())
-  rotateDownBy' (✓ x₀∉x₁s) zero = ✓ x₀∉x₁s
-  rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc n) = rotateDownBy' (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s)) (expandFin (subst Fin (invariantLength x₀ x₁s x₀∉x₁s) n))
+--   {-# TERMINATING #-}
+--   rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} → (xs : 𝕃 𝐴) → Fin (suc (length xs)) → 𝕃 𝐴
+--   rotateDownBy' ∅ zero = ∅
+--   rotateDownBy' ∅ (suc ())
+--   rotateDownBy' (✓ x₀∉x₁s) zero = ✓ x₀∉x₁s
+--   rotateDownBy' (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s) (suc n) = rotateDownBy' (rotateDown (✓ {x₀ = x₀} {x₁s = x₁s} x₀∉x₁s)) (expandFin (subst Fin (invariantLength x₀ x₁s x₀∉x₁s) n))
 
 
-module M₃ where
-  open import Prelude.Nat
-  open import Prelude.Bool
-  open import Prelude.Equality
+-- module M₃ where
+--   open import Prelude.Nat
+--   open import Prelude.Bool
+--   open import Prelude.Equality
 
-  invariantLength₁ : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀ : 𝐴} {x₁s} {x₀∉x₁s : x₀ ∉ x₁s} → length x₁s ≡ length (init (✓ x₀∉x₁s))
-  invariantLength₁ {𝑨} {𝐴} {x₀} {.∅} {∅} = refl
-  invariantLength₁ {𝑨} {𝐴} {x₁} {.(✓ {_} {_} {x₀} {x₁s} x₀∉x₁s)} {● {x₀ = x₀} x {x₁s = x₁s} x₀∉x₁s₁ x₀∉x₁s} = cong suc (invariantLength₁ {x₁s = x₁s})
+--   invariantLength₁ : ∀ {𝑨} {𝐴 : Set 𝑨} {x₀ : 𝐴} {x₁s} {x₀∉x₁s : x₀ ∉ x₁s} → length x₁s ≡ length (init (✓ x₀∉x₁s))
+--   invariantLength₁ {𝑨} {𝐴} {x₀} {.∅} {∅} = refl
+--   invariantLength₁ {𝑨} {𝐴} {x₁} {.(✓ {_} {_} {x₀} {x₁s} x₀∉x₁s)} {● {x₀ = x₀} x {x₁s = x₁s} x₀∉x₁s₁ x₀∉x₁s} = cong suc (invariantLength₁ {x₁s = x₁s})
 
-  invariantLength₂ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} → length xs ≡ length (rotateDown xs)
-  invariantLength₂ {xs = ∅} = refl
-  invariantLength₂ {xs = ✓ ∅} = refl
-  invariantLength₂ {xs = ✓ {x₀ = x₀} {x₁s = x₁s} (● {x₀ = x₁} x₀≢x₁ {x₁s = x₂s} x₀∉x₂s x₁∉x₂s)} = cong (λ x → suc (suc x)) (invariantLength₁ {x₀∉x₁s = x₁∉x₂s})
+--   invariantLength₂ : ∀ {𝑨} {𝐴 : Set 𝑨} {xs : 𝕃 𝐴} → length xs ≡ length (rotateDown xs)
+--   invariantLength₂ {xs = ∅} = refl
+--   invariantLength₂ {xs = ✓ ∅} = refl
+--   invariantLength₂ {xs = ✓ {x₀ = x₀} {x₁s = x₁s} (● {x₀ = x₁} x₀≢x₁ {x₁s = x₂s} x₀∉x₂s x₁∉x₂s)} = cong (λ x → suc (suc x)) (invariantLength₁ {x₀∉x₁s = x₁∉x₂s})
 
-  thm₁ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
-  thm₁ {n} {zero} ()
-  thm₁ {zero} {suc zero} ()
-  thm₁ {zero} {suc (suc m)} true = true
-  thm₁ {suc n} {suc m} x = thm₁ {n = n} {m = m} x
+--   thm₁ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
+--   thm₁ {n} {zero} ()
+--   thm₁ {zero} {suc zero} ()
+--   thm₁ {zero} {suc (suc m)} true = true
+--   thm₁ {suc n} {suc m} x = thm₁ {n = n} {m = m} x
 
-  thm₂ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
-  thm₂ {zero} {zero} ()
-  thm₂ {zero} {suc _} _ = true
-  thm₂ {suc n} {zero} ()
-  thm₂ {suc n} {suc m} x = thm₂ {n = n} {m = m} x
+--   thm₂ : ∀ {n m} → IsTrue (lessNat (suc n) m) → IsTrue (lessNat n m)
+--   thm₂ {zero} {zero} ()
+--   thm₂ {zero} {suc _} _ = true
+--   thm₂ {suc n} {zero} ()
+--   thm₂ {suc n} {suc m} x = thm₂ {n = n} {m = m} x
 
-  rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} {n : ℕ} → (xs : 𝕃 𝐴) (n<xs : IsTrue (n < length xs)) → 𝕃 𝐴
-  rotateDownBy' {𝑨} {𝐴} {zero} xs _ = xs
-  rotateDownBy' {𝑨} {𝐴} {suc n} xs n<xs = rotateDownBy' {n = n} (rotateDown xs) (thm₂ {n = n} {m = length (rotateDown xs)} (subst (λ x → IsTrue (lessNat (suc n) x)) (invariantLength₂ {xs = xs}) n<xs))
+--   rotateDownBy' : ∀ {𝑨} {𝐴 : Set 𝑨} {n : ℕ} → (xs : 𝕃 𝐴) (n<xs : IsTrue (n < length xs)) → 𝕃 𝐴
+--   rotateDownBy' {𝑨} {𝐴} {zero} xs _ = xs
+--   rotateDownBy' {𝑨} {𝐴} {suc n} xs n<xs = rotateDownBy' {n = n} (rotateDown xs) (thm₂ {n = n} {m = length (rotateDown xs)} (subst (λ x → IsTrue (lessNat (suc n) x)) (invariantLength₂ {xs = xs}) n<xs))
 
-open import Prelude.Fin
-open import Data.Fin
+-- open import Prelude.Fin
+-- open import Data.Fin

@@ -1,6 +1,155 @@
 --{-# OPTIONS --show-implicit #-}
 module Scratch where
 
+module Coinduction where
+  open import Agda.Builtin.Equality
+  open import Data.Product
+
+  record Stream (A : Set) : Set where
+    coinductive
+    field
+      hd : A
+      tl : Stream A
+
+  open Stream
+
+  record _≈_ {A : Set} (xs : Stream A) (ys : Stream A) : Set where
+    coinductive
+    field
+      hd-≈ : hd xs ≡ hd ys
+      tl-≈ : tl xs ≈ tl ys
+
+  open _≈_
+
+  even : ∀ {A} → Stream A → Stream A
+  hd (even x) = hd x
+  tl (even x) = even (tl (tl x))
+
+  odd : ∀ {A} → Stream A → Stream A
+  odd x = even (tl x)
+
+  split : ∀ {A } → Stream A → Stream A × Stream A
+  split xs = even xs , odd xs
+
+  merge : ∀ {A} → Stream A × Stream A → Stream A
+  hd (merge (fst , snd)) = hd fst
+  tl (merge (fst , snd)) = merge (snd , tl fst)
+
+  merge-split-id : ∀ {A} (xs : Stream A) → merge (split xs) ≈ xs
+  hd-≈ (merge-split-id _)  = refl
+  tl-≈ (merge-split-id xs) = merge-split-id (tl xs)
+
+module RvD where
+  open import Agda.Primitive
+  open import Agda.Builtin.Equality
+  open import Agda.Builtin.Nat
+
+  record Σ (A : Set) (B : A -> Set) : Set where
+    no-eta-equality
+    constructor _,_
+    field
+      fst : A
+      snd : B fst
+  open Σ
+
+  some-pair : Σ Nat (λ _ → Nat)
+  some-pair = 2 , 4
+
+  okay : some-pair ≡ (fst some-pair , snd some-pair)
+  okay = refl
+
+  fail : ∀ {A : Set}{B : A -> Set} → (x : Σ A B) → x ≡ (fst x , snd x)
+  fail x = {!refl!}
+  --
+  -- x != fst x , snd x of type Σ .A .B
+  -- when checking that the expression refl has type x ≡ (fst x , snd x)
+
+module RecordVsData where
+  open import Agda.Primitive
+  open import Agda.Builtin.Equality
+  open import Agda.Builtin.Nat
+
+  record Pair-eta (A B : Set) : Set where
+    constructor _,_
+    field
+      fst : A
+      snd : B
+
+  open Pair-eta public
+
+  record Pair-no-eta (A B : Set) : Set where
+    no-eta-equality
+    constructor _,_
+    field
+      fst : A
+      snd : B
+
+  open Pair-no-eta public
+
+
+  fail : ∀ {A : Set}{B : Set} → (x : Pair-eta A B) (y : Pair-eta A B) → x ≡ (fst x , snd y)
+  fail x y = {!fst x , snd x!}
+
+  nada : Nat
+  nada = 0
+
+  pair1-eta : Pair-eta Nat Nat
+  pair1-eta = 0 , 1
+
+  pair1-no-eta : Pair-no-eta Nat Nat
+  pair1-no-eta = record { fst = 0 ; snd = 1 }
+
+  pair2-eta : Pair-eta Nat Nat
+  pair2-eta = nada , 1
+
+  pair2-no-eta : Pair-no-eta Nat Nat
+  pair2-no-eta = record { fst = nada ; snd = 1 }
+
+  test-Pair-eta : pair1-eta ≡ pair2-eta
+  test-Pair-eta = {!!}
+
+  test-Pair-no-eta : pair1-no-eta ≡ (fst pair2-no-eta , snd pair2-no-eta)
+  test-Pair-no-eta = {!refl!}
+
+  record Σ-no-eta {a b} (A : Set a) (B : A → Set b) : Set (a ⊔ b) where
+    no-eta-equality
+    constructor _,_
+    field
+      proj₁ : A
+      proj₂ : B proj₁
+
+  open Σ-no-eta public
+
+  record Σ-eta {a b} (A : Set a) (B : A → Set b) : Set (a ⊔ b) where
+    constructor _,_
+    field
+      proj₁ : A
+      proj₂ : B proj₁
+
+  open Σ-eta public
+
+  data Σ-data {a b} (A : Set a) (B : A → Set b) : Set (a ⊔ b) where
+    _,_ : (proj₁ : A) → (proj₂ : B proj₁) → Σ-data A B
+
+  test-data : (Σ-data Set λ _ → Set) → (Σ-data Set λ _ → Set)
+  test-data (proj₁ , proj₂) = {!!}
+
+  test-data-let : (Σ-data Set λ _ → Set) → (Σ-data Set λ _ → Set)
+  test-data-let x = {!let (proj₁ , proj₂) = x in ?!}
+
+  test-Σ-no-eta : (Σ-no-eta Set λ _ → Set) → (Σ-no-eta Set λ _ → Set)
+  test-Σ-no-eta (proj₁ , proj₂) = {!!}
+
+  test-Σ-no-eta-let : (Σ-no-eta Set λ _ → Set) → (Σ-no-eta Set λ _ → Set)
+  test-Σ-no-eta-let x = let (proj₁ , proj₂) = x in {!!}
+
+  test-Σ-eta : (Σ-eta Set λ _ → Set) → (Σ-eta Set λ _ → Set)
+  test-Σ-eta (proj₁ , proj₂) = {!!}
+
+  test-Σ-eta-let : (Σ-eta Set λ _ → Set) → (Σ-eta Set λ _ → Set)
+  test-Σ-eta-let x = let (proj₁ , proj₂) = x in {!!}
+
+
 -- module OnlyFastInSharing where
 --   open import Agda.Builtin.Nat
 --   open import Agda.Builtin.Equality
