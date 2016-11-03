@@ -11,31 +11,6 @@ infix 3 ¬_
 ¬_ : ∀ {a} (A : Set a) → Set a
 ¬ A = A → ⊥
 
-infixr 0 _$_
-_$_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
-f $ x = f x
-
-infixl 0 $-syntax
-$-syntax : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
-$-syntax = _$_
-
-syntax $-syntax f x = x |⋙ f
-
-infixr 9 _∘_
-_∘_ : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
-        (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
-        ∀ x → C x (g x)
-(f ∘ g) x = f (g x)
-{-# INLINE _∘_ #-}
-
-infixl 9 ∘-syntax
-∘-syntax : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
-           (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
-           ∀ x → C x (g x)
-∘-syntax = _∘_
-
-syntax ∘-syntax f g = g ⋙ f
-
 open import Agda.Primitive
 open import Agda.Builtin.Nat public
      using ( zero
@@ -89,6 +64,76 @@ suc a ≟ suc b with a ≟ b
 _≢_ : ∀ {a} {A : Set a} → A → A → Set a
 A ≢ B = ¬ A ≡ B
 
+open import Prelude.Memoization
+open import Prelude.Nat
+open import Prelude.Product
+
+record Valueable {a} (A : Set a) : Set a where
+  field
+    value : (x : A) → Mem x
+
+open Valueable ⦃ ... ⦄
+
+infixr 0 _$_
+_$_ : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
+f $ x = f x
+
+infixl 0 $-syntax
+$-syntax : ∀ {a b} {A : Set a} {B : A → Set b} → (∀ x → B x) → ∀ x → B x
+$-syntax = _$_
+
+infixr 0 _!$_
+_!$_ : ∀ {a} {A : Set a} {b} {B : A → Set b} → ((x : A) → B x) → ⦃ _ : Valueable A ⦄ → ∀ x → B x
+f  !$ x with value x
+... | (x' , x-refl) rewrite sym x-refl = f x'
+
+infixl 0 !$-syntax₁
+!$-syntax₁ : ∀ {a} {A : Set a} {b} {B : A → Set b} → ((x : A) → B x) → ⦃ _ : Valueable A ⦄ → (x : A) → B x
+!$-syntax₁ = _!$_
+
+infixl 0 !$-syntax₂
+!$-syntax₂ : ∀ {a} {A : Set a} {b} {B : A → Set b} → ((x : A) → B x) → ⦃ _ : Valueable A ⦄ → (x : A) → B x
+!$-syntax₂ = _!$_
+
+syntax $-syntax f x = x |⋙ f
+syntax !$-syntax₁ f x = x !|⋙ f
+syntax !$-syntax₂ (λ v → f) x = !let v != x !in f
+
+infixr 9 _∘_
+_∘_ : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
+        (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
+        ∀ x → C x (g x)
+(f ∘ g) x = f (g x)
+{-# INLINE _∘_ #-}
+
+infixl 9 ∘-syntax
+∘-syntax : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
+             (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
+             ∀ x → C x (g x)
+∘-syntax = _∘_
+
+infixr 9 _!∘_
+_!∘_ : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
+         (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
+         ⦃ _ : Valueable A ⦄ →
+         ⦃ _ : {x : A} → Valueable (B x) ⦄ →
+         ∀ x → C x (g x)
+(f !∘ g) x with value x
+... | (x' , x-refl) rewrite sym x-refl with value (g x')
+... | (gx' , gx-refl) rewrite sym gx-refl = f !$ gx'
+  --!let gx != (g !$ x) !in (f !$ gx)
+
+infixl 9 !∘-syntax
+!∘-syntax : ∀ {a b c} {A : Set a} {B : A → Set b} {C : ∀ x → B x → Set c}
+              (f : ∀ {x} (y : B x) → C x y) (g : ∀ x → B x) →
+              ⦃ _ : Valueable A ⦄ →
+              ⦃ _ : {x : A} → Valueable (B x) ⦄ →
+              ∀ x → C x (g x)
+!∘-syntax = _!∘_
+
+syntax ∘-syntax f g = g ⋙ f
+syntax !∘-syntax f g = g !⋙ f
+
 data 𝕃 {𝑨} (𝐴 : Set 𝑨) : Set 𝑨
 data _∉_ {𝑨} {𝐴 : Set 𝑨} (x : 𝐴) : 𝕃 𝐴 → Set 𝑨
 
@@ -99,6 +144,21 @@ data 𝕃 {𝑨} (𝐴 : Set 𝑨) where
 data _∉_ {𝑨} {𝐴 : Set 𝑨} (𝔞 : 𝐴) where
   ∅ : 𝔞 ∉ ∅
   ● : ∀ {x₀} → 𝔞 ≢ x₀ → ∀ {x₁s} → 𝔞 ∉ x₁s → (x₀∉x₁s : x₀ ∉ x₁s) → 𝔞 ∉ ✓ x₀∉x₁s
+
+mutual
+  𝕃μ : ∀ {𝑨} {𝐴 : Set 𝑨} → (l : 𝕃 𝐴) → Mem l
+  𝕃μ ∅ = putμ refl
+  𝕃μ (✓ x) with ∉μ x
+  ... | (mx , x-refl) rewrite sym x-refl = ✓ mx , refl
+
+  ∉μ : ∀ {𝑨} {𝐴 : Set 𝑨} {x : 𝐴} → {l : 𝕃 𝐴} → (x∉l : x ∉ l) → Mem x∉l
+  ∉μ ∅ = putμ refl
+  ∉μ (● x₂ x₃ x₁) with ∉μ x₃ | ∉μ x₁
+  ... | (mx₃ , x₃-refl) | (mx₁ , x₁-refl) rewrite sym x₃-refl | sym x₁-refl = ● x₂ mx₃ mx₁ , refl
+
+instance
+  Applyable𝕃 : ∀ {𝑨} {𝐴 : Set 𝑨} → Valueable (𝕃 𝐴)
+  Applyable𝕃 = record { value = 𝕃μ }
 
 --pattern ⟦_⟧ x₀∉x₁s = ✓ x₀∉x₁s
 
@@ -275,49 +335,13 @@ swapTop-ex = refl
 open import Agda.Builtin.Nat using (_<_)
 open import Agda.Builtin.Bool
 
-open import Prelude.Memoization
-open import Prelude.Nat
-open import Prelude.Product
-open import Prelude.Function
-
-mutual
-  𝕃μ : ∀ {𝑨} {𝐴 : Set 𝑨} → (l : 𝕃 𝐴) → Mem l
-  𝕃μ ∅ = putμ refl
-  𝕃μ (✓ x) with ∉μ x
-  ... | (mx , x-refl) rewrite sym x-refl = ✓ mx , refl
-
-  ∉μ : ∀ {𝑨} {𝐴 : Set 𝑨} {x : 𝐴} → {l : 𝕃 𝐴} → (x∉l : x ∉ l) → Mem x∉l
-  ∉μ ∅ = putμ refl
-  ∉μ (● x₂ x₃ x₁) with ∉μ x₃ | ∉μ x₁
-  ... | (mx₃ , x₃-refl) | (mx₁ , x₁-refl) rewrite sym x₃-refl | sym x₁-refl = ● x₂ mx₃ mx₁ , refl
-
-record Applyable {a} (A : Set a) : Set a where
-  field
-    mem : (x : A) → Mem x
-
-open Applyable ⦃ ... ⦄
-
-instance
-  Applyable𝕃 : ∀ {𝑨} {𝐴 : Set 𝑨} → Applyable (𝕃 𝐴)
-  Applyable𝕃 = record { mem = 𝕃μ }
-
-infixr 0 _!$_
-_!$_ : ∀ {a} {A : Set a} {b} {B : A → Set b} → ((x : A) → B x) → ⦃ _ : Applyable A ⦄ → (x : A) → B x
-f  !$ x with mem x
-... | (x' , x-refl) rewrite (sym x-refl) = f x'
-
-
 {-# TERMINATING #-}
 rotateDownBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 rotateDownBy n ∅ = ∅
 rotateDownBy 0 x = x
-rotateDownBy (suc n) x = --rotateDownBy n (rotateDown x)
-  rotateDownBy n !$ rotateDown x
-{-
 rotateDownBy (suc n) x with length x < suc (suc n)
 ... | true = rotateDownBy (suc n - length x) x
-... | false = x |⋙ rotateDown ⋙ rotateDownBy n
--}
+... | false = x !|⋙ rotateDown !⋙ rotateDownBy n
 
 rotateDownBy-ex : 𝕃→𝑳 (rotateDownBy 46 [abcd]) ≡ (⋆c ∷ₗ ⋆d ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ∅)
 rotateDownBy-ex = refl
@@ -328,8 +352,7 @@ rotateDownBy-ex = refl
 raiseFromBottom : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 raiseFromBottom _ ∅ = ∅
 raiseFromBottom _ [ x₀ ] = [ x₀ ]
-raiseFromBottom n xs = xs |⋙ rotateDownBy (2 + n) ⋙ swapTop ⋙ rotateDownBy (length xs - 2 - n)
-  --rotateDownBy (length xs - 2 - n) $ 𝕃μ ! swapTop $ 𝕃μ ! rotateDownBy (2 + n) xs
+raiseFromBottom n xs = xs !|⋙ rotateDownBy (2 + n) !⋙ swapTop !⋙ rotateDownBy (length xs - 2 - n)
 
 raiseFromBottom-ex : 𝕃→𝑳 (raiseFromBottom 2 [abcd]) ≡ (⋆b ∷ₗ ⋆a ∷ₗ ⋆c ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromBottom-ex = refl
@@ -340,8 +363,7 @@ raiseBottomBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → 𝕃 𝐴 → 𝕃 𝐴
 raiseBottomBy _ ∅ = ∅
 raiseBottomBy _ [ x₀ ] = [ x₀ ]
 raiseBottomBy 0 xs = xs
-raiseBottomBy (suc n) xs = xs |⋙ raiseBottomBy n ⋙ raiseFromBottom n
-  --raiseFromBottom n $ 𝕃μ ! raiseBottomBy n $ 𝕃μ ! xs
+raiseBottomBy (suc n) xs = xs !|⋙ raiseBottomBy n !⋙ raiseFromBottom n
 
 raiseBottomBy-ex : 𝕃→𝑳 (raiseBottomBy 2 [abcd]) ≡ (⋆a ∷ₗ ⋆d ∷ₗ ⋆b ∷ₗ ⋆c ∷ₗ ∅)
 raiseBottomBy-ex = refl
@@ -354,9 +376,8 @@ raiseFromTopBy : ∀ {𝑨} {𝐴 : Set 𝑨} → ℕ → ℕ → 𝕃 𝐴 → 
 raiseFromTopBy _ 0 xs = xs
 raiseFromTopBy n m xs with length xs
 ... | l with suc n ≟ l
-... | yes _ = xs |⋙ raiseBottomBy m
-... | no _  = xs |⋙ rotateDownBy (l - (suc n)) ⋙ raiseBottomBy m ⋙ rotateDownBy (suc n)
-  --rotateDownBy (suc n) $ 𝕃μ ! raiseBottomBy m $ 𝕃μ ! rotateDownBy (l - (suc n)) xs
+... | yes _ = xs !|⋙ raiseBottomBy m
+... | no _  = xs !|⋙ rotateDownBy (l - (suc n)) !⋙ raiseBottomBy m !⋙ rotateDownBy (suc n)
 
 raiseFromTopBy-ex : 𝕃→𝑳 (raiseFromTopBy 2 2 [abcd]) ≡ (⋆c ∷ₗ ⋆a ∷ₗ ⋆b ∷ₗ ⋆d ∷ₗ ∅)
 raiseFromTopBy-ex = refl
@@ -366,8 +387,7 @@ reorder xs perm = go 0 perm xs where
   go : ∀ {𝑨} {𝐴 : Set 𝑨} → (n : ℕ) → 𝑳 ℕ → (L : 𝕃 𝐴) → 𝕃 𝐴
   go _ _ ∅ = ∅
   go _ ∅ xs = xs
-  go n (p₀ ∷ₗ ps) xs = go (suc n) ps (raiseFromTopBy (n + p₀) p₀ xs)
-    --go (suc n) ps $ 𝕃μ ! raiseFromTopBy (n + p₀) p₀ xs
+  go n (p₀ ∷ₗ ps) xs = go (suc n) ps !$ raiseFromTopBy (n + p₀) p₀ xs
 
 -- module M₁ where
 --   data Fin : ℕ → Set where
