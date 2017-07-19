@@ -1,3 +1,4 @@
 name: scratch
 include: .
+         /home/martin/Desktop/agda/test
 depend: standard-library agda-prelude
